@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+coverage
+pnpm-lock.yaml
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+README.md
+tsconfig.json
+pnpm-workspace.yaml
+package.json
+astro.config.mjs
+.vscode/
+.prettierrc
