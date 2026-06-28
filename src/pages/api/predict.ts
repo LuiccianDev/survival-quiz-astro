@@ -170,13 +170,28 @@ Reply ONLY with this JSON, no markdown, no explanation:
         break
       }
     } catch (err) {
-      console.warn(`Model ${model} failed, trying next...`, err)
       lastError = err
+      // If it's a quota/rate limit error from Google, no point trying the next model
+      const status = (err as { status?: number })?.status
+      if (status === 429) {
+        console.warn(`Model ${model} hit quota limit — not retrying.`)
+        break
+      }
+      console.warn(`Model ${model} failed, trying next...`, err)
     }
   }
 
   if (!outputText) {
-    return jsonResponse({ error: 'All models failed.', detail: String(lastError) }, 502)
+    const isQuotaError = (lastError as { status?: number })?.status === 429
+    return jsonResponse(
+      {
+        error: isQuotaError
+          ? 'Gemini quota exceeded. The free tier allows ~10 requests/minute — wait a moment and try again.'
+          : 'All models failed.',
+        detail: String(lastError),
+      },
+      isQuotaError ? 429 : 502,
+    )
   }
 
   try {
