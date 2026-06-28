@@ -39,23 +39,48 @@ export const SCENARIOS = {
     questions: [
       {
         q: 'You fall for someone your family would never accept. What do you do?',
-        options: ['Tell your family immediately', 'Keep it completely secret', 'Run away together', 'End it before it starts'],
+        options: [
+          'Tell your family immediately',
+          'Keep it completely secret',
+          'Run away together',
+          'End it before it starts',
+        ],
       },
       {
         q: 'Your lover asks you to choose between them and your family. You...?',
-        options: ['Choose your family', 'Choose your lover', 'Refuse to choose', 'Ask for more time'],
+        options: [
+          'Choose your family',
+          'Choose your lover',
+          'Refuse to choose',
+          'Ask for more time',
+        ],
       },
       {
         q: 'You receive a letter saying your lover has died. Before you can verify it, you...?',
-        options: ['Rush to confirm in person', 'Collapse and believe it', 'Ask someone you trust', 'Wait for more news'],
+        options: [
+          'Rush to confirm in person',
+          'Collapse and believe it',
+          'Ask someone you trust',
+          'Wait for more news',
+        ],
       },
       {
         q: 'The only way to be together is to fake your own death. Do you go through with it?',
-        options: ['Yes, without hesitation', 'No, it\'s too dangerous', 'Only if they go first', 'Find another way'],
+        options: [
+          'Yes, without hesitation',
+          "No, it's too dangerous",
+          'Only if they go first',
+          'Find another way',
+        ],
       },
       {
         q: 'Everything has gone wrong. Your last chance is a single desperate act. You...?',
-        options: ['Do it — love is worth it', 'Hesitate and lose the moment', 'Walk away and survive alone', 'Trust that it will work out'],
+        options: [
+          'Do it — love is worth it',
+          'Hesitate and lose the moment',
+          'Walk away and survive alone',
+          'Trust that it will work out',
+        ],
       },
     ],
   },
