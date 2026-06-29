@@ -47,7 +47,7 @@ function OptionRow({ label, selected, onClick }) {
       <span
         className={[
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-          selected ? 'border-white bg-white' : 'border-gray-600',
+          selected ? 'border-[var(--accent)] bg-[var(--accent)]' : 'border-gray-600',
         ].join(' ')}
       >
         {selected && <span className="h-2 w-2 rounded-full bg-surface-800" />}
@@ -77,7 +77,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
   const sceneImage = sceneImages?.[scenario]
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row">
+    <div data-scenario={scenario} className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row">
       {/* Image panel — full height on desktop, fixed height on mobile */}
       <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
         {sceneImage && (
@@ -100,8 +100,8 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
         <div className="w-full max-w-md">
           {/* Icon + title */}
           <div className="mb-4 flex items-center gap-3">
-            <span className="text-4xl">{result.survived ? <Fenix className="inline-block text-amber-400" width={40} height={40} /> : <Calabera className="inline-block text-white" width={40} height={40} />}</span>
-            <h2 className="text-2xl leading-tight font-bold text-white">{result.title}</h2>
+            <span className="text-4xl">{result.survived ? <Fenix className="inline-block text-amber-400" width={40} height={40} /> : <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />}</span>
+            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">{result.title}</h2>
           </div>
 
           <div className="mb-5 h-px w-full bg-surface-700" />
@@ -134,7 +134,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
           {/* Button fades in when done */}
           <button
             onClick={onReset}
-            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-gray-100 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-[var(--accent)] hover:text-surface-900 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
           >
             Try Again
           </button>
@@ -254,7 +254,7 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
                 <span
                   className={[
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-                    hoveredScenario === key ? 'border-white' : 'border-gray-600',
+                    hoveredScenario === key ? 'border-[var(--accent)]' : 'border-gray-600',
                   ].join(' ')}
                 />
                 <span
@@ -272,14 +272,14 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── QUIZ ─── */
   if (step === 'quiz')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
+      <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
         <div className="w-full max-w-md">
           <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
             Question {currentQ + 1} of {questions.length}
           </p>
           <div className="mb-8 h-1 w-full rounded-full bg-surface-700">
-            <div
-              className="h-1 rounded-full bg-white transition-all duration-500"
+          <div
+            className="h-1 rounded-full bg-[var(--accent)] transition-all duration-500"
               style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
             />
           </div>
@@ -305,16 +305,16 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── LOADING ─── */
   if (step === 'loading')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6">
+      <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6">
         <div className="flex flex-col items-center gap-4 text-center">
-          <Calabera className="animate-bounce text-white" width={56} height={56} />
+          <Calabera className="animate-bounce text-[var(--accent)]" width={56} height={56} />
           <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
           <p className="animate-pulse text-sm text-gray-500">The universe is not on your side</p>
           <div className="mt-2 flex gap-2">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="h-2 w-2 animate-pulse rounded-full bg-white/40"
+                className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]/40"
                 style={{ animationDelay: `${i * 0.2}s` }}
               />
             ))}

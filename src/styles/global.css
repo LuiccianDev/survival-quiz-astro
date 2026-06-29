@@ -7,6 +7,26 @@
   --color-surface-700: #2a2a2a;
 }
 
+:root {
+  --accent: #fff;
+}
+
+[data-scenario='zombie'] {
+  --accent: #c5d5b8;
+}
+
+[data-scenario='hogwarts'] {
+  --accent: #c4c9e8;
+}
+
+[data-scenario='doomed_love'] {
+  --accent: #e8c4cd;
+}
+
+[data-scenario='got'] {
+  --accent: #e8dcc4;
+}
+
 @keyframes blink {
   0%,
   100% {
