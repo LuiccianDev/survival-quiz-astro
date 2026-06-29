@@ -28,7 +28,15 @@ A four-screen interactive quiz:
 [Select Scenario] → [Question 1-5] → [Loading] → [Result: You Died 💀]
 ```
 
----
+Here's what the final app looks like in action:
+
+![Scenario selection — pick your doom](public/screenshots/01-scenario-selection.png)
+
+*Choose from 4 deadly scenarios — each with 5 questions that decide your fate.*
+
+![Death result — AI narrates your demise](public/screenshots/03-result-death.png)
+
+*Gemini writes a dramatic, darkly funny story about exactly how you died.*
 
 ## Prerequisites
 
@@ -166,6 +174,8 @@ import '../styles/global.css'
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <title>Would You Survive?</title>
   </head>
   <body>
@@ -217,6 +227,10 @@ For our quiz — which is 100% interactive — `client:load` is the right choice
 ## Step 3 — The Quiz React Component
 
 This is the heart of the app. Create `src/components/SurvivalQuiz.jsx`.
+
+![Quiz question — 5 questions, 4 options each](public/screenshots/02-quiz-question.png)
+
+*Each question has 4 radio-style options. Pick one and the next question appears after a brief flash of your selection.*
 
 The component manages a **state machine** with four steps:
 
@@ -568,7 +582,7 @@ The blinking cursor is a `<span>` styled with the `blink` keyframe animation we 
 
 ---
 
-## Step 8 — Hardening Your Dependencies
+## Step 7 — Hardening Your Dependencies
 
 You have a working app. Before you ship it, take five minutes to harden your dependency setup against supply chain attacks. This is where most Node.js projects cut corners — don't.
 
@@ -593,7 +607,7 @@ blockExoticSubdeps: true
 engineStrict: true
 ignore-scripts: true
 minimumReleaseAge: 1440
-trustPolicy: no-downgrade
+# trustPolicy: no-downgrade
 ```
 
 ### What each setting does
@@ -634,7 +648,7 @@ If you add a new dependency in the future and it needs build permissions, pnpm w
 
 ---
 
-## Step 9 — Run It
+## Step 8 — Run It
 
 ```bash
 pnpm dev

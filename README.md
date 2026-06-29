@@ -1,6 +1,5 @@
+![Would You Survive?](/public/banner-readme.png)
 <div align="center">
-
-# 💀 Would You Survive?
 
 An AI-powered survival quiz where you answer 5 questions across deadly scenarios and an AI narrates your inevitable fate.
 
