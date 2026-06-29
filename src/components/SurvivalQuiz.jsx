@@ -40,8 +40,8 @@ function OptionRow({ label, selected, onClick }) {
       className={[
         'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
         selected
-          ? 'bg-[#2a2a2a] text-white'
-          : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#242424] hover:text-white',
+          ? 'bg-surface-700 text-white'
+          : 'bg-surface-800 text-gray-400 hover:bg-surface-750 hover:text-white',
       ].join(' ')}
     >
       <span
@@ -50,7 +50,7 @@ function OptionRow({ label, selected, onClick }) {
           selected ? 'border-white bg-white' : 'border-gray-600',
         ].join(' ')}
       >
-        {selected && <span className="h-2 w-2 rounded-full bg-[#1a1a1a]" />}
+        {selected && <span className="h-2 w-2 rounded-full bg-surface-800" />}
       </span>
       <span className={`text-base ${selected ? 'font-semibold text-white' : 'font-normal'}`}>
         {label}
@@ -77,7 +77,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
   const sceneImage = sceneImages?.[scenario]
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0f0f0f] md:h-screen md:flex-row">
+    <div className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row">
       {/* Image panel — full height on desktop, fixed height on mobile */}
       <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
         {sceneImage && (
@@ -90,7 +90,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
               decoding="async"
             />
             {/* Vignette: bottom fade on mobile, right fade on desktop */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#0f0f0f]" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-surface-900" />
           </>
         )}
       </div>
@@ -104,7 +104,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
             <h2 className="text-2xl leading-tight font-bold text-white">{result.title}</h2>
           </div>
 
-          <div className="mb-5 h-px w-full bg-[#2a2a2a]" />
+          <div className="mb-5 h-px w-full bg-surface-700" />
 
           {/* Story */}
           <p className="min-h-[4rem] text-sm leading-relaxed text-gray-400">
@@ -117,7 +117,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
           {/* Death cause */}
           {!result.survived && (
             <div
-              className={`mt-4 rounded-xl bg-[#1a1a1a] px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
+              className={`mt-4 rounded-xl bg-surface-800 px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
             >
               <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">
                 Cause of death
@@ -228,7 +228,7 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── SCENARIO SELECTION ─── */
   if (step === 'select')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
         <div className="w-full max-w-md">
           <h1 className="mb-2 text-4xl leading-tight font-bold tracking-tight text-white">
             Would You Survive?
@@ -247,8 +247,8 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
                 className={[
                   'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
                   hoveredScenario === key
-                    ? 'bg-[#2a2a2a] text-white'
-                    : 'bg-[#1a1a1a] text-gray-400',
+                    ? 'bg-surface-700 text-white'
+                    : 'bg-surface-800 text-gray-400',
                 ].join(' ')}
               >
                 <span
@@ -272,12 +272,12 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── QUIZ ─── */
   if (step === 'quiz')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
         <div className="w-full max-w-md">
           <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
             Question {currentQ + 1} of {questions.length}
           </p>
-          <div className="mb-8 h-1 w-full rounded-full bg-[#2a2a2a]">
+          <div className="mb-8 h-1 w-full rounded-full bg-surface-700">
             <div
               className="h-1 rounded-full bg-white transition-all duration-500"
               style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
@@ -305,7 +305,7 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── LOADING ─── */
   if (step === 'loading')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0f0f0f] px-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6">
         <div className="flex flex-col items-center gap-4 text-center">
           <Calabera className="animate-bounce text-white" width={56} height={56} />
           <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>

@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+@theme {
+  --color-surface-900: #0f0f0f;
+  --color-surface-800: #1a1a1a;
+  --color-surface-750: #242424;
+  --color-surface-700: #2a2a2a;
+}
+
 @keyframes blink {
   0%,
   100% {
