@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SCENARIOS } from '../constants/scenes'
+import Calabera from './Calabera.jsx'
+import Fenix from './Fenix.jsx'
 
 /** Typewriter hook — reveals text character by character */
 function useTypewriter(text = '', speed = 22, delay = 0) {
@@ -38,17 +40,17 @@ function OptionRow({ label, selected, onClick }) {
       className={[
         'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
         selected
-          ? 'bg-[#2a2a2a] text-white'
-          : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#242424] hover:text-white',
+          ? 'bg-surface-700 text-white'
+          : 'bg-surface-800 text-gray-400 hover:bg-surface-750 hover:text-white',
       ].join(' ')}
     >
       <span
         className={[
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-          selected ? 'border-white bg-white' : 'border-gray-600',
+          selected ? 'border-[var(--accent)] bg-[var(--accent)]' : 'border-gray-600',
         ].join(' ')}
       >
-        {selected && <span className="h-2 w-2 rounded-full bg-[#1a1a1a]" />}
+        {selected && <span className="h-2 w-2 rounded-full bg-surface-800" />}
       </span>
       <span className={`text-base ${selected ? 'font-semibold text-white' : 'font-normal'}`}>
         {label}
@@ -63,7 +65,7 @@ function Divider() {
 }
 
 /** Result screen with typewriter effect */
-function ResultScreen({ result, onReset }) {
+function ResultScreen({ result, scenario, sceneImages, onReset }) {
   const { displayed: storyText, done: storyDone } = useTypewriter(result.story ?? '', 12, 200)
   const { displayed: deathText, done: deathDone } = useTypewriter(
     !result.survived ? (result.deathCause ?? '') : '',
@@ -72,56 +74,88 @@ function ResultScreen({ result, onReset }) {
   )
 
   const showButton = result.survived ? storyDone : deathDone
+  const sceneImage = sceneImages?.[scenario]
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-10">
-      <div className="w-full max-w-md">
-        {/* Icon + title */}
-        <div className="mb-4 flex items-center gap-3">
-          <span className="text-4xl">{result.survived ? '🏆' : '💀'}</span>
-          <h2 className="text-2xl leading-tight font-bold text-white">{result.title}</h2>
-        </div>
-
-        <div className="mb-5 h-px w-full bg-[#2a2a2a]" />
-
-        {/* Story */}
-        <p className="min-h-[4rem] text-sm leading-relaxed text-gray-400">
-          {storyText}
-          {!storyDone && (
-            <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
-          )}
-        </p>
-
-        {/* Death cause */}
-        {!result.survived && (
-          <div
-            className={`mt-4 rounded-xl bg-[#1a1a1a] px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">
-              Cause of death
-            </p>
-            <p className="text-sm text-red-400">
-              {deathText}
-              {storyDone && !deathDone && (
-                <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-red-400 align-middle" />
-              )}
-            </p>
-          </div>
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row"
+    >
+      {/* Image panel — full height on desktop, fixed height on mobile */}
+      <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
+        {sceneImage && (
+          <>
+            <img
+              src={sceneImage}
+              alt={scenario ?? ''}
+              className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-106"
+              loading="eager"
+              decoding="async"
+            />
+            {/* Vignette: bottom fade on mobile, right fade on desktop */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-surface-900" />
+          </>
         )}
+      </div>
 
-        {/* Button fades in when done */}
-        <button
-          onClick={onReset}
-          className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-gray-100 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
-        >
-          Try Again
-        </button>
+      {/* Content */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 md:w-1/2 md:px-10">
+        <div className="w-full max-w-md">
+          {/* Icon + title */}
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-4xl">
+              {result.survived ? (
+                <Fenix className="inline-block text-amber-400" width={40} height={40} />
+              ) : (
+                <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />
+              )}
+            </span>
+            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">
+              {result.title}
+            </h2>
+          </div>
+
+          <div className="mb-5 h-px w-full bg-surface-700" />
+
+          {/* Story */}
+          <p className="min-h-[4rem] text-sm leading-relaxed text-gray-400">
+            {storyText}
+            {!storyDone && (
+              <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
+            )}
+          </p>
+
+          {/* Death cause */}
+          {!result.survived && (
+            <div
+              className={`mt-4 rounded-xl bg-surface-800 px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">
+                Cause of death
+              </p>
+              <p className="text-sm text-red-400">
+                {deathText}
+                {storyDone && !deathDone && (
+                  <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-red-400 align-middle" />
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Button fades in when done */}
+          <button
+            onClick={onReset}
+            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-[var(--accent)] hover:text-surface-900 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-export default function SurvivalQuiz() {
+export default function SurvivalQuiz({ sceneImages = {} }) {
   const [step, setStep] = useState('select') // select | quiz | loading | result
   const [scenario, setScenario] = useState(null)
   const [answers, setAnswers] = useState([])
@@ -205,7 +239,7 @@ export default function SurvivalQuiz() {
   /* ─── SCENARIO SELECTION ─── */
   if (step === 'select')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-12">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
         <div className="w-full max-w-md">
           <h1 className="mb-2 text-4xl leading-tight font-bold tracking-tight text-white">
             Would You Survive?
@@ -224,14 +258,14 @@ export default function SurvivalQuiz() {
                 className={[
                   'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
                   hoveredScenario === key
-                    ? 'bg-[#2a2a2a] text-white'
-                    : 'bg-[#1a1a1a] text-gray-400',
+                    ? 'bg-surface-700 text-white'
+                    : 'bg-surface-800 text-gray-400',
                 ].join(' ')}
               >
                 <span
                   className={[
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-                    hoveredScenario === key ? 'border-white' : 'border-gray-600',
+                    hoveredScenario === key ? 'border-[var(--accent)]' : 'border-gray-600',
                   ].join(' ')}
                 />
                 <span
@@ -249,14 +283,17 @@ export default function SurvivalQuiz() {
   /* ─── QUIZ ─── */
   if (step === 'quiz')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-12">
+      <div
+        data-scenario={scenario}
+        className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12"
+      >
         <div className="w-full max-w-md">
           <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
             Question {currentQ + 1} of {questions.length}
           </p>
-          <div className="mb-8 h-1 w-full rounded-full bg-[#2a2a2a]">
+          <div className="mb-8 h-1 w-full rounded-full bg-surface-700">
             <div
-              className="h-1 rounded-full bg-white transition-all duration-500"
+              className="h-1 rounded-full bg-[var(--accent)] transition-all duration-500"
               style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
             />
           </div>
@@ -282,16 +319,19 @@ export default function SurvivalQuiz() {
   /* ─── LOADING ─── */
   if (step === 'loading')
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0f0f0f] px-6">
+      <div
+        data-scenario={scenario}
+        className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6"
+      >
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="animate-bounce text-5xl">💀</div>
+          <Calabera className="animate-bounce text-[var(--accent)]" width={56} height={56} />
           <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
           <p className="animate-pulse text-sm text-gray-500">The universe is not on your side</p>
           <div className="mt-2 flex gap-2">
             {[0, 1, 2].map((i) => (
               <span
                 key={i}
-                className="h-2 w-2 animate-pulse rounded-full bg-white/40"
+                className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]/40"
                 style={{ animationDelay: `${i * 0.2}s` }}
               />
             ))}
@@ -301,5 +341,8 @@ export default function SurvivalQuiz() {
     )
 
   /* ─── RESULT ─── */
-  if (step === 'result') return <ResultScreen result={result} onReset={reset} />
+  if (step === 'result')
+    return (
+      <ResultScreen result={result} scenario={scenario} sceneImages={sceneImages} onReset={reset} />
+    )
 }

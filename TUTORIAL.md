@@ -1,48 +1,56 @@
 # Build an AI Survival Quiz with Astro, React & Gemini
 
-> **"Would You Survive?"** — a darkly comedic quiz where players face impossible scenarios and an AI decides their fate. Spoiler: they almost always die.
+> **"Would You Survive?"** — a darkly comedic quiz where players face impossible scenarios and Google Gemini decides their fate. Spoiler: 99.99% of players die horribly.
 
-In this tutorial, you'll build a fully working web app from scratch. By the end, you'll have learned how to:
+**🏆 Codédex Project Tutorial** — _LGTM tier target_
 
-- Set up an **Astro** project with React and Tailwind CSS
-- Use **Astro Islands** to add interactivity without bloating your bundle
-- Create **server-side API endpoints** in Astro that call the **Gemini AI API**
-- Craft smart AI prompts that produce structured, predictable JSON output
-- Build a custom React **typewriter effect** hook
-- Protect your free API quota with an **in-memory rate limiter**
+This is not a "paste this and pray" tutorial. Every decision here has a reason — from the architecture (why Astro Islands instead of pure React?) to the AI prompt design (why do we decide the outcome _before_ calling Gemini?). You'll understand _why_ each piece exists, not just _how_ to wire it up.
 
-The project is deliberately built to be unfair — 99.99% of players die. That's the fun.
+By the end, you'll have a full-stack AI-powered web app deployed on Vercel, and you'll know:
+
+- Why **Astro Islands** give you React's interactivity without the JS bundle bloat
+- How to build **server-side API endpoints** in Astro that securely call the Gemini API
+- Why you should **pre-roll the outcome** before prompting an AI (and how to enforce it)
+- How to craft **structured prompts** that reliably return parseable JSON
+- How **sliding window rate limiters** work and why they beat fixed windows
+- Why supply chain hardening matters and how `pnpm` v11 can protect you with 3 lines of config
 
 ---
 
 ## What We're Building
 
-A four-screen interactive quiz:
-
-1. **Scenario selection** — pick your doom (Zombie Apocalypse, Hogwarts, Game of Thrones, Forbidden Love)
-2. **5 questions** — each with 4 options, a progress bar, and radio-style buttons
-3. **Loading screen** — "Your fate is being written..."
-4. **Result screen** — Gemini narrates your death (or miraculous survival) with a typewriter animation
+A four-screen interactive death quiz:
 
 ```
-[Select Scenario] → [Question 1-5] → [Loading] → [Result: You Died 💀]
+[Choose Scenario] → [5 Questions] → [Loading...] → [Your Fate Revealed 💀]
 ```
+
+Four scenarios. Five questions each. One AI judge. Zero mercy.
+
+![Scenario selection — pick your doom](public/screenshots/01-scenario-selection.png)
+
+_Each scenario gets its own accent color — zombie is pale green, Hogwarts is soft blue, forbidden love is rose, Game of Thrones is gold._
+
+![Quiz question with progress bar](public/screenshots/02-quiz-question.png)
+
+_Five questions, four options each. A progress bar tracks how close you are to your doom._
+
+![Death result — full-screen with image and typewriter narration](public/screenshots/03-result-death.png)
+
+_Gemini narrates your death one character at a time. The scenario image looms behind the text._
 
 ---
 
 ## Prerequisites
 
-Before starting, make sure you have:
-
 - **Node.js 22+** — check with `node -v`
-- **pnpm** — install with `npm install -g pnpm`
-- A **Gemini API key** — get one free at [Google AI Studio](https://aistudio.google.com/app/apikey)
+- **pnpm** — `npm install -g pnpm`
+- A **Gemini API key** — free at [Google AI Studio](https://aistudio.google.com/app/apikey)
+- About **90 minutes** (less if you type fast, more if you read every word)
 
 ---
 
 ## Step 0 — Project Setup
-
-Create a new Astro project and install everything we need.
 
 ```bash
 pnpm create astro@latest survival-quiz
@@ -50,24 +58,28 @@ cd survival-quiz
 pnpm install
 ```
 
-When the Astro setup wizard asks, choose:
+When the Astro wizard asks:
 
-- **Template:** Empty
-- **TypeScript:** Yes (Strict)
-- **Install dependencies:** Yes
+| Prompt       | Answer           |
+| ------------ | ---------------- |
+| Template     | **Empty**        |
+| TypeScript   | **Yes (strict)** |
+| Install deps | **Yes**          |
 
-Now add React and Tailwind:
+Now add React, Tailwind, and the Gemini SDK:
 
 ```bash
 pnpm astro add react
 pnpm add -D @tailwindcss/vite tailwindcss
-pnpm add @google/genai
+pnpm add @google/genai @astrojs/vercel
 ```
 
-Update `astro.config.mjs` to wire everything together:
+### Configure Astro
+
+`astro.config.mjs` wires together the server output mode, the React integration, the Vercel adapter, and the Tailwind Vite plugin:
 
 ```js
-// astro.config.mjs
+// @ts-check
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@astrojs/react'
@@ -83,13 +95,43 @@ export default defineConfig({
 })
 ```
 
-`output: 'server'` enables fully server-rendered mode — every page and API route is rendered on the server at request time. The `@astrojs/vercel` adapter translates Astro's SSR output into Vercel serverless functions.
+`output: 'server'` is the key. Without it, Astro would pre-render every page to static HTML at build time — and our API endpoint would never run. With `server` mode, every request is handled live.
 
-Create `src/styles/global.css` and import Tailwind plus a custom animation we'll use later:
+### Why `@astrojs/vercel`?
+
+Astro is a **framework**, not a server. To run SSR in production, you need an **adapter** that translates Astro's internal server into something a hosting platform understands. `@astrojs/vercel` converts each API route into a serverless function. Netlify and Cloudflare have their own adapters — the interface is the same, the output target changes.
+
+### Global CSS with Tailwind v4
+
+Tailwind v4 uses `@theme` to define design tokens. This is where we declare our dark surface palette and, later, our per-scenario accent colors:
 
 ```css
 /* src/styles/global.css */
 @import 'tailwindcss';
+
+@theme {
+  --color-surface-900: #0f0f0f;
+  --color-surface-800: #1a1a1a;
+  --color-surface-750: #242424;
+  --color-surface-700: #2a2a2a;
+}
+
+:root {
+  --accent: #fff;
+}
+
+[data-scenario='zombie'] {
+  --accent: #c5d5b8;
+}
+[data-scenario='hogwarts'] {
+  --accent: #c4c9e8;
+}
+[data-scenario='doomed_love'] {
+  --accent: #e8c4cd;
+}
+[data-scenario='got'] {
+  --accent: #e8dcc4;
+}
 
 @keyframes blink {
   0%,
@@ -102,22 +144,27 @@ Create `src/styles/global.css` and import Tailwind plus a custom animation we'll
 }
 ```
 
-Create your `.env` file at the project root — **never commit this file**:
+The `data-scenario` attributes will be set on the root quiz div by our React component. When the player picks "Zombie Apocalypse," every element that uses `var(--accent)` shifts to pale green — the progress bar, the radio button borders, the skull icon. The player gets a visual hint of the world they've entered before reading a single line of text.
+
+We'll come back to the `blink` animation when we build the typewriter cursor.
+
+### Environment Variables
+
+Create `.env` at the project root:
 
 ```
-GEMINI_API_KEY=your_api_key_here
+GEMINI_API_KEY=your_key_here
 ```
+
+Add `.env` to your `.gitignore`. **Never commit API keys.**
 
 ---
 
 ## Step 1 — The Scenarios (Data Layer)
 
-All quiz content lives in a single TypeScript file. This keeps the data completely separate from the UI — if you want to add a new scenario later, you touch exactly one file.
-
-Create `src/constants/scenes.ts`:
+All quiz content lives in one TypeScript file: `src/constants/scenes.ts`. Every scenario has a label and exactly 5 questions with 4 options each.
 
 ```ts
-// src/constants/scenes.ts
 export const SCENARIOS = {
   zombie: {
     label: 'Zombie Apocalypse',
@@ -135,37 +182,126 @@ export const SCENARIOS = {
       },
     ],
   },
-  // ... add more scenarios following the same shape
+  hogwarts: {
+    label: 'Hogwarts',
+    questions: [
+      {
+        q: 'Your Hogwarts house?',
+        options: ['Gryffindor', 'Slytherin', 'Hufflepuff', 'Ravenclaw'],
+      },
+      {
+        q: 'First spell you master?',
+        options: ['Expelliarmus', 'Avada Kedavra', 'Lumos', 'Accio'],
+      },
+      { q: 'Facing Voldemort, you...?', options: ['Fight', 'Run', 'Negotiate', 'Hide'] },
+      { q: 'Your magical creature companion?', options: ['Owl', 'Phoenix', 'Dragon', 'None'] },
+      {
+        q: 'Dark Arts: use them or refuse?',
+        options: ['Use them', 'Refuse always', 'Only in emergencies', 'Learn but never use'],
+      },
+    ],
+  },
+  doomed_love: {
+    label: 'Forbidden Love',
+    questions: [
+      {
+        q: 'You fall for someone your family would never accept. What do you do?',
+        options: [
+          'Tell your family immediately',
+          'Keep it completely secret',
+          'Run away together',
+          'End it before it starts',
+        ],
+      },
+      {
+        q: 'Your lover asks you to choose between them and your family. You...?',
+        options: [
+          'Choose your family',
+          'Choose your lover',
+          'Refuse to choose',
+          'Ask for more time',
+        ],
+      },
+      {
+        q: 'You receive a letter saying your lover has died. Before you can verify it, you...?',
+        options: [
+          'Rush to confirm in person',
+          'Collapse and believe it',
+          'Ask someone you trust',
+          'Wait for more news',
+        ],
+      },
+      {
+        q: 'The only way to be together is to fake your own death. Do you go through with it?',
+        options: [
+          'Yes, without hesitation',
+          "No, it's too dangerous",
+          'Only if they go first',
+          'Find another way',
+        ],
+      },
+      {
+        q: 'Everything has gone wrong. Your last chance is a single desperate act. You...?',
+        options: [
+          'Do it — love is worth it',
+          'Hesitate and lose the moment',
+          'Walk away and survive alone',
+          'Trust that it will work out',
+        ],
+      },
+    ],
+  },
+  got: {
+    label: 'Game of Thrones',
+    questions: [
+      { q: 'Your house allegiance?', options: ['Stark', 'Lannister', 'Targaryen', 'No one'] },
+      { q: 'Strategy for survival?', options: ['Betrayal', 'Loyalty', 'Isolation', 'Gold'] },
+      {
+        q: 'Winter is coming. You...?',
+        options: ['Stockpile', 'Migrate south', 'Ignore it', 'Prepare army'],
+      },
+      {
+        q: 'The throne is yours to take. How?',
+        options: ['War', 'Marriage', 'Politics', 'Dragons'],
+      },
+      {
+        q: 'A trusted ally betrays you. You...?',
+        options: ['Execute them', 'Forgive', 'Exile', 'Use it against them'],
+      },
+    ],
+  },
 }
 ```
 
-Each scenario follows this contract:
+Each scenario has exactly 4 questions with 4 options. Why? Consistency matters more than creativity here. The React component renders every scenario through the same loop — same progress bar, same radio buttons, same 300ms delay on answer. If scenarios had variable-length question sets, the UI would need branching logic. By fixing 5 questions × 4 options, every scenario is interchangeable.
 
-| Field       | Type       | Description                  |
-| ----------- | ---------- | ---------------------------- |
-| `label`     | `string`   | Display name shown in the UI |
-| `questions` | `array`    | Array of 5 question objects  |
-| `q`         | `string`   | The question text            |
-| `options`   | `string[]` | Exactly 4 answer choices     |
+### Why TypeScript for Plain Data?
 
-Why TypeScript here? Because this object is consumed by both the React component (for rendering) and the API endpoint (for the prompt). A shared typed structure catches mistakes at build time instead of runtime.
+`SCENARIOS` is consumed by two completely different runtime contexts:
+
+1. **The React component** (browser) — renders questions and options
+2. **The API endpoint** (server) — reads questions and answers to build the Gemini prompt
+
+Without a shared type, they can drift apart. You add a `bonusQuestion` field in one and forget the other, and nothing warns you until runtime. With TypeScript, a rename or restructure is caught at compile time in both places simultaneously.
 
 ---
 
-## Step 2 — The Layout and Page
+## Step 2 — The Layout, the Island, and Per-Scenario Theming
 
-Astro separates **layout** (the HTML shell) from **pages** (the content). Create the layout first:
+### The HTML Shell
 
 ```astro
 ---
+// src/layouts/Layout.astro
 import '../styles/global.css'
 ---
 
-<!-- src/layouts/Layout.astro --><!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Would You Survive?</title>
   </head>
   <body>
@@ -184,53 +320,115 @@ import '../styles/global.css'
 </style>
 ```
 
-The `<slot />` is where page content gets injected. Now create the page:
+`<slot />` is Astro's equivalent of React's `{children}`. It's where page content gets injected.
+
+### The Island Pattern
+
+Astro's architecture is simple: **most of your page is static HTML**. Only the interactive parts ship JavaScript. Each interactive component is called an "island."
+
+Create a bridge component that sits between Astro (server) and React (client):
 
 ```astro
 ---
-import Layout from '../layouts/Layout.astro'
-import SurvivalQuiz from '../components/SurvivalQuiz.jsx'
+// src/components/SurvivalQuizIsland.astro
+import { getImage } from 'astro:assets'
+import SurvivalQuiz from './SurvivalQuiz.jsx'
+
+import zombieRaw from '../assets/endings/zombie-apocalypse.webp'
+import hogwartsRaw from '../assets/endings/hogwarts.webp'
+import forbiddenLoveRaw from '../assets/endings/forbidden-love.webp'
+import gotRaw from '../assets/endings/game-of-thrones.webp'
+
+const [zombieImg, hogwartsImg, forbiddenLoveImg, gotImg] = await Promise.all([
+  getImage({ src: zombieRaw, format: 'webp', quality: 100 }),
+  getImage({ src: hogwartsRaw, format: 'webp', quality: 100 }),
+  getImage({ src: forbiddenLoveRaw, format: 'webp', quality: 100 }),
+  getImage({ src: gotRaw, format: 'webp', quality: 100 }),
+])
+
+const sceneImages = {
+  zombie: zombieImg.src,
+  hogwarts: hogwartsImg.src,
+  doomed_love: forbiddenLoveImg.src,
+  got: gotImg.src,
+}
 ---
 
-<!-- src/pages/index.astro -->
+<SurvivalQuiz client:load sceneImages={sceneImages} />
+```
+
+Everything above the `---` fence runs on the server at request time. `getImage` optimizes each image, generates a content-hashed URL, and returns it. No image-processing library ever reaches the browser.
+
+The `client:load` directive tells Astro: _"Hydrate this React component on the client immediately after the page loads."_ The component receives `sceneImages` as a prop — a plain object mapping scenario keys to optimized image URLs. The React component never imports raw `.webp` files. It doesn't need to know about `astro:assets` at all.
+
+This separation matters: if you add a leaderboard page that also shows scenario images, you reuse `getImage` in a new island without touching the React component.
+
+### The Entry Page
+
+```astro
+---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro'
+import SurvivalQuizIsland from '../components/SurvivalQuizIsland.astro'
+---
+
 <Layout>
-  <SurvivalQuiz client:load />
+  <SurvivalQuizIsland />
 </Layout>
 ```
 
-Notice `client:load` on the React component. This is the **Astro Islands** pattern — the most important concept in this project.
+Three lines. The layout provides the HTML shell, the island provides the interactivity. That's it.
 
-### Understanding Astro Islands
+### Why Islands? Why Not Just React?
 
-By default, Astro renders everything to static HTML. No JavaScript reaches the browser unless you explicitly opt in. `client:load` tells Astro: _"hydrate this component on the client immediately after the page loads."_
+If you build this as a plain React SPA, every visitor downloads React, your quiz component, and all its dependencies — even before they click anything. With Astro Islands:
 
-This means:
+- The page shell (HTML, CSS) loads instantly with **zero JavaScript**
+- React and the quiz component load **only after** the page is interactive
+- Everything else on the page (if there were anything else) stays as static HTML
 
-- The page shell (HTML, CSS) loads instantly with zero JS
-- The React quiz component loads its JS separately, only when needed
-- Other parts of the page stay static and fast
+For this quiz — which is 100% interactive — the difference is negligible. But the pattern matters. The **discipline** of separating static from interactive forces you to think about what _needs_ JavaScript and what doesn't.
 
-For our quiz — which is 100% interactive — `client:load` is the right choice. For something like a header or footer, you'd use no directive at all (pure static HTML).
+### Per-Scenario Theming (The `data-scenario` System)
+
+Remember the CSS custom properties we set up in `global.css`? Each scenario has its own accent color via `[data-scenario="..."]`. The React component sets this attribute on the root quiz div:
+
+```jsx
+<div data-scenario={scenario} className="...">
+```
+
+When the player chooses "Hogwarts," the div becomes `<div data-scenario="hogwarts">`. The CSS fires `--accent: #c4c9e8` (soft blue), and every element that uses `var(--accent)` — the progress bar, the radio button border, the skull icon — shifts color.
+
+We also registered semantic color tokens in `@theme`:
+
+- `bg-surface-900` → `#0f0f0f` (deepest background)
+- `bg-surface-800` → `#1a1a1a` (card backgrounds)
+- `bg-surface-750` → `#242424` (hover state)
+- `bg-surface-700` → `#2a2a2a` (selected state)
+
+These aren't random hex values. The difference between each level is exactly `10` hex points (`0f → 1a → 24 → 2a`). That consistency means hover, selected, and default states always feel like they belong to the same surface — just layered.
 
 ---
 
-## Step 3 — The Quiz React Component
+## Step 3 — The Quiz Component
 
 This is the heart of the app. Create `src/components/SurvivalQuiz.jsx`.
 
-The component manages a **state machine** with four steps:
+The component is a **state machine** with four states:
 
 ```
 'select' → 'quiz' → 'loading' → 'result'
 ```
 
-Each step renders a completely different screen. Here's the state setup:
+Each state renders a completely different screen. Here's the full skeleton with state:
 
 ```jsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { SCENARIOS } from '../constants/scenes'
+import Calabera from './Calabera.jsx'
+import Fenix from './Fenix.jsx'
 
-export default function SurvivalQuiz() {
+export default function SurvivalQuiz({ sceneImages = {} }) {
   const [step, setStep] = useState('select')
   const [scenario, setScenario] = useState(null)
   const [answers, setAnswers] = useState([])
@@ -240,13 +438,123 @@ export default function SurvivalQuiz() {
   const [selectedOption, setSelectedOption] = useState(null)
 
   const questions = scenario ? SCENARIOS[scenario].questions : []
-  // ... rendering logic below
+
+  function selectScenario(key) {
+    /* ... */
+  }
+  function handleOptionClick(opt) {
+    /* ... */
+  }
+  function answer(option) {
+    /* ... */
+  }
+  async function submitAnswers(finalAnswers) {
+    /* ... */
+  }
+  function reset() {
+    /* ... */
+  }
+
+  if (step === 'select') return /* ... */
+  if (step === 'quiz') return /* ... */
+  if (step === 'loading') return /* ... */
+  if (step === 'result') return /* ... */
 }
 ```
 
-### The OptionRow Component
+### The Scenario Selection Screen
 
-The quiz options use a custom radio-button style. Notice the pattern: selected state changes both the background and the inner circle of the radio indicator.
+```jsx
+if (step === 'select')
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
+      <div className="w-full max-w-md">
+        <h1 className="mb-2 text-4xl leading-tight font-bold tracking-tight text-white">
+          Would You Survive?
+        </h1>
+        <Divider />
+        <p className="mt-6 mb-8 text-base text-gray-400">
+          Choose your scenario and face your fate.
+        </p>
+        <div className="flex flex-col gap-3">
+          {Object.entries(SCENARIOS).map(([key, val]) => (
+            <button
+              key={key}
+              onClick={() => selectScenario(key)}
+              onMouseEnter={() => setHoveredScenario(key)}
+              onMouseLeave={() => setHoveredScenario(null)}
+              className={[
+                'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
+                hoveredScenario === key
+                  ? 'bg-surface-700 text-white'
+                  : 'bg-surface-800 text-gray-400',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+                  hoveredScenario === key ? 'border-[var(--accent)]' : 'border-gray-600',
+                ].join(' ')}
+              />
+              <span
+                className={`text-base ${hoveredScenario === key ? 'font-semibold text-white' : 'font-normal'}`}
+              >
+                {val.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+```
+
+The scenario buttons use a **hover state** (`hoveredScenario`) rather than CSS `:hover` alone. This is deliberate: we control the radio circle border color, which CSS `:hover` on a parent can't easily style on the child span. By tracking hover in state, both the background and the circle change together.
+
+### The Quiz Screen
+
+```jsx
+if (step === 'quiz')
+  return (
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12"
+    >
+      <div className="w-full max-w-md">
+        <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
+          Question {currentQ + 1} of {questions.length}
+        </p>
+        <div className="mb-8 h-1 w-full rounded-full bg-surface-700">
+          <div
+            className="h-1 rounded-full bg-[var(--accent)] transition-all duration-500"
+            style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
+          />
+        </div>
+        <h2 className="mb-3 text-3xl leading-tight font-bold text-white">
+          {questions[currentQ].q}
+        </h2>
+        <Divider />
+        <p className="mt-4 mb-8 text-sm text-gray-500">Choose wisely. Your life depends on it.</p>
+        <div className="flex flex-col gap-3">
+          {questions[currentQ].options.map((opt) => (
+            <OptionRow
+              key={opt}
+              label={opt}
+              selected={selectedOption === opt}
+              onClick={() => handleOptionClick(opt)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+```
+
+The `data-scenario={scenario}` on the root div is what triggers the per-scenario accent color. The progress bar uses `bg-[var(--accent)]` — so on Hogwarts it's blue, on Game of Thrones it's gold.
+
+The `transition-all duration-500` on the progress bar makes it animate smoothly as each question advances.
+
+#### The OptionRow Component
 
 ```jsx
 function OptionRow({ label, selected, onClick }) {
@@ -256,18 +564,17 @@ function OptionRow({ label, selected, onClick }) {
       className={[
         'flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-left transition-all duration-200',
         selected
-          ? 'bg-[#2a2a2a] text-white'
-          : 'bg-[#1a1a1a] text-gray-400 hover:bg-[#242424] hover:text-white',
+          ? 'bg-surface-700 text-white'
+          : 'bg-surface-800 text-gray-400 hover:bg-surface-750 hover:text-white',
       ].join(' ')}
     >
-      {/* The radio circle */}
       <span
         className={[
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-          selected ? 'border-white bg-white' : 'border-gray-600',
+          selected ? 'border-[var(--accent)] bg-[var(--accent)]' : 'border-gray-600',
         ].join(' ')}
       >
-        {selected && <span className="h-2 w-2 rounded-full bg-[#1a1a1a]" />}
+        {selected && <span className="h-2 w-2 rounded-full bg-surface-800" />}
       </span>
       <span className={`text-base ${selected ? 'font-semibold text-white' : 'font-normal'}`}>
         {label}
@@ -277,15 +584,15 @@ function OptionRow({ label, selected, onClick }) {
 }
 ```
 
-### Handling Answers with a Brief Delay
+When selected, the radio circle fills with the accent color and a small inner dot appears. The background lifts from `surface-800` (dark) to `surface-700` (slightly lighter). The visual feedback is instant — the player sees their choice highlighted before anything happens.
 
-When a player clicks an option, we want them to see their selection highlighted before the question advances. A 300ms delay achieves this without feeling sluggish:
+#### The 300ms Delay
 
 ```jsx
 function handleOptionClick(opt) {
-  setSelectedOption(opt) // show it selected
+  setSelectedOption(opt)
   setTimeout(() => {
-    answer(opt) // advance after 300ms
+    answer(opt)
     setSelectedOption(null)
   }, 300)
 }
@@ -294,63 +601,303 @@ function answer(option) {
   const next = [...answers, option]
   setAnswers(next)
   if (currentQ + 1 < questions.length) {
-    setCurrentQ(currentQ + 1) // next question
+    setCurrentQ(currentQ + 1)
   } else {
-    submitAnswers(next) // last question — submit
+    submitAnswers(next)
   }
 }
 ```
 
-### The Progress Bar
+Why 300ms? Too fast and the player doesn't register their choice. Too slow and the quiz feels sluggish. 300ms is the sweet spot for "I saw what I picked, now move on."
 
-A simple visual indicator built with inline styles so the width is dynamic:
+The state update and the timeout are deliberately split from the answer logic. `handleOptionClick` handles **visual feedback**; `answer` handles **data logic**. If you later want to add sound effects, analytics, or undo, you change one function without touching the other.
+
+#### The Divider Component
 
 ```jsx
-<div className="mb-8 h-1 w-full rounded-full bg-[#2a2a2a]">
-  <div
-    className="h-1 rounded-full bg-white transition-all duration-500"
-    style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
-  />
-</div>
+function Divider() {
+  return <div className="h-px w-16 bg-white/60" />
+}
 ```
 
-The `transition-all duration-500` makes the bar animate smoothly on each question advance.
+A thin decorative line used between the title and content on every screen. Extracting it to a component means the visual weight stays consistent — change it once, and it updates everywhere.
+
+### The Loading Screen
+
+```jsx
+if (step === 'loading')
+  return (
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6"
+    >
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Calabera className="animate-bounce text-[var(--accent)]" width={56} height={56} />
+        <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
+        <p className="animate-pulse text-sm text-gray-500">The universe is not on your side</p>
+        <div className="mt-2 flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]/40"
+              style={{ animationDelay: `${i * 0.2}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+```
+
+The skull bounces (`animate-bounce`), the subtitle pulses (`animate-pulse`), and three dots light up sequentially (`animationDelay: i * 0.2s`). Together they create the feeling that something is happening — the AI is "writing" your fate.
+
+### The Result Screen
+
+This is the most complex screen. It has a horizontal split layout: image on the left, content on the right.
+
+```jsx
+function ResultScreen({ result, scenario, sceneImages, onReset }) {
+  const sceneImage = sceneImages?.[scenario]
+
+  return (
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row"
+    >
+      {/* Image panel */}
+      <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
+        {sceneImage && (
+          <>
+            <img
+              src={sceneImage}
+              alt={scenario ?? ''}
+              className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-106"
+            />
+            {/* Vignette overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-surface-900" />
+          </>
+        )}
+      </div>
+
+      {/* Content panel */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 md:w-1/2 md:px-10">
+        <div className="w-full max-w-md">
+          {/* Icon + title */}
+          <div className="mb-4 flex items-center gap-3">
+            <span className="text-4xl">
+              {result.survived ? (
+                <Fenix className="inline-block text-amber-400" width={40} height={40} />
+              ) : (
+                <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />
+              )}
+            </span>
+            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">
+              {result.title}
+            </h2>
+          </div>
+
+          <div className="mb-5 h-px w-full bg-surface-700" />
+
+          {/* Story — typewriter rendered here */}
+          <p className="min-h-[4rem] text-sm leading-relaxed text-gray-400">
+            {storyText}
+            {!storyDone && (
+              <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
+            )}
+          </p>
+
+          {/* Death cause */}
+          {!result.survived && (
+            <div
+              className={`mt-4 rounded-xl bg-surface-800 px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">
+                Cause of death
+              </p>
+              <p className="text-sm text-red-400">
+                {deathText}
+                {storyDone && !deathDone && (
+                  <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-red-400 align-middle" />
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Try Again button */}
+          <button
+            onClick={onReset}
+            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-[var(--accent)] hover:text-surface-900 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+Three design decisions worth understanding:
+
+**The vignette overlay** on the image uses `bg-gradient-to-t` on mobile (fade at the bottom) and `bg-gradient-to-r` on desktop (fade on the right). Without it, the image would have harsh edges where it meets the dark content panel. The gradient creates a soft transition that makes the two panels feel like one surface.
+
+**The icon changes based on outcome.** Death gets the skull (`Calabera`) in the scenario accent color. Survival gets a phoenix (`Fenix`) in amber — visually distinct, symbolically opposite. The player knows their fate before reading a word.
+
+**The "Try Again" button fades in** only after all typewriter text is done (`translate-y-0 opacity-100` with `pointer-events-none` while hidden). This forces the player to watch their fate unfold before they can dismiss it.
 
 ---
 
-## Step 4 — The Gemini API Endpoint
+## Step 4 — SVG Icons: The Skull and the Phoenix
 
-Create `src/pages/api/predict.ts`. This is a server-side endpoint — it runs on the server, never in the browser. Your API key stays safe.
+Two SVG components add visual personality to the quiz. Create `src/components/Calabera.jsx`:
 
-The first line is critical for Astro SSR:
+```jsx
+export default function Calabera({ className = '', width = 36, height = 36 }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height}
+         viewBox="0 0 512 512" className={className} role="img" aria-label="calavera">
+      {/* SVG path data for a sugar-skull-inspired icon */}
+      <path d="..." fill="currentColor" transform="..." />
+      <!-- ... more paths -->
+    </svg>
+  )
+}
+```
+
+And `src/components/Fenix.jsx` for the phoenix:
+
+```jsx
+export default function Fenix({ className = '', width = 36, height = 36 }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      viewBox="0 0 512 512"
+      className={className}
+      role="img"
+      aria-label="fenix"
+    >
+      {/* SVG path data for a phoenix icon */}
+    </svg>
+  )
+}
+```
+
+Both accept `className` (for color and sizing via Tailwind) and explicit dimensions. They use `fill="currentColor"` so they inherit whatever text color is active — pass `text-[var(--accent)]` and the icon matches the scenario theme.
+
+### Why Inline SVGs Instead of Images?
+
+- **Color control**: `currentColor` lets us recolor the icon with CSS. An `<img>` tag can't do that.
+- **No network request**: The SVG is part of the component bundle. Zero latency.
+- **Animation**: You can animate SVG paths with CSS. We use `animate-bounce` on the skull during loading.
+
+---
+
+## Step 5 — The Gemini API Endpoint
+
+Create `src/pages/api/predict.ts`. This runs on the server — your API key never reaches the browser.
+
+The first line is sacred:
 
 ```ts
 export const prerender = false
 ```
 
-Without this, Astro would try to pre-render this endpoint at build time and discard it. `prerender = false` tells Astro: _"this route must run dynamically on every request."_
+Without it, Astro tries to pre-render this endpoint to a static JSON file at build time. The API route disappears. Every POST endpoint in Astro needs this.
 
-### Deciding Fate Before Calling the AI
+### The Full Endpoint
 
-Here's the key design decision: **we decide if the player survives before we call Gemini**. We use `Math.random()` with a brutal 0.01% survival rate, then tell the AI what already happened and ask it to narrate it.
+```ts
+import type { APIRoute } from 'astro'
+import { GoogleGenAI } from '@google/genai'
+
+export const prerender = false
+
+const MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash'] as const
+
+// ─── Types ──────────────────────────────────────────────────────────────
+
+type PredictionPayload = {
+  scenario?: unknown
+  answers?: unknown
+}
+
+type PredictionResult = {
+  survived: boolean
+  title: string
+  story: string
+  deathCause?: string
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  })
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+}
+```
+
+### The POST Handler
+
+```ts
+export const POST: APIRoute = async ({ request }) => {
+  // 1. Rate limit check (covered in Step 6)
+  // ...
+
+  // 2. Parse & validate the request body
+  const rawBody = await request.text()
+  if (!rawBody.trim()) return jsonResponse({ error: 'Request body is required.' }, 400)
+
+  let payload: PredictionPayload
+  try { payload = JSON.parse(rawBody) as PredictionPayload }
+  catch { return jsonResponse({ error: 'Invalid JSON body.' }, 400) }
+
+  const { scenario, answers } = payload
+  if (typeof scenario !== 'string' || !scenario.trim() ||
+      !isStringArray(answers) || answers.length === 0) {
+    return jsonResponse({ error: 'Invalid scenario or answers payload.' }, 400)
+  }
+
+  // 3. Validate the API key exists
+  const apiKey = import.meta.env.GEMINI_API_KEY
+  if (!apiKey) return jsonResponse({ error: 'Missing GEMINI_API_KEY' }, 500)
+
+  const ai = new GoogleGenAI({ apiKey })
+```
+
+### Why We Pre-Roll the Outcome
+
+Here's the crucial design decision:
 
 ```ts
 const survivalRoll = Math.random()
 const survived = survivalRoll <= 0.0001 // 0.01% chance
+```
 
+We decide if the player lives or dies **before** we call Gemini. Then we tell the AI what already happened and ask it to narrate:
+
+```ts
 const prompt = `
 You are a dramatic, darkly comedic narrator for a survival quiz called "Would You Survive?".
+Your job is to judge the player's fate in the scenario "${scenario}".
 
-THE FATE HAS ALREADY BEEN DECIDED:
+THE FATE HAS ALREADY BEEN DECIDED BY THE GODS OF PROBABILITY:
 - survived: ${survived}
 
 The player answered: ${JSON.stringify(answers)}
 
 ${
   survived
-    ? `The player survived — an almost impossible outcome. Write a story that feels like a miracle.`
-    : `The player has died. Write a creative, dramatic, darkly funny cause of death
-     connected to their specific answers. Be theatrical. Be merciless.`
+    ? `The player is one of the legendary 0.01% who actually survived. Write a story
+       that acknowledges how close they came to death at every turn, yet somehow — against
+       all odds — they made it. Make it feel like a miracle.`
+    : `The player has died. Write a creative, dramatic, and darkly funny cause of death
+       that fits the scenario. Punish their worst decisions. Be theatrical. Be merciless.`
 }
 
 Reply ONLY with this JSON, no markdown:
@@ -358,29 +905,29 @@ Reply ONLY with this JSON, no markdown:
   "survived": ${survived},
   "title": "short dramatic title (max 6 words)",
   "story": "2-3 vivid sentences about their fate",
-  "deathCause": "one sharp sentence on exactly how they died"
+  "deathCause": "${survived ? '' : 'one sharp sentence on exactly how and why they died'}"
 }
 `
 ```
 
-Why this approach instead of letting the AI decide?
+Three reasons for pre-rolling:
 
-- **Predictability** — AI models can be inconsistent about survival rates. We guarantee 99.99% death every time.
-- **Tone control** — When we tell the AI the outcome, it writes a much more committed narrative. It isn't hedging; it's narrating.
-- **Safety** — We enforce `result.survived = survived` after parsing, so even if the AI ignores our instruction, the correct value always wins.
+1. **Predictability.** AI models are inconsistent about survival rates. One run might kill 50%, another might spare 80%. Our `Math.random()` guarantees exactly 99.99% death every time.
 
-### Parsing the AI Response
+2. **Tone commitment.** When we tell the AI "they died," it writes a committed narrative. It doesn't hedge or leave ambiguity. The story feels decisive.
 
-AI models sometimes wrap JSON in markdown code fences (` ```json ``` `). We strip those before parsing:
+3. **Safety enforcement.** After parsing the AI response, we overwrite `result.survived = survived`. Even if the JSON says `"survived": true` (because the AI ignored our instruction), the correct value wins. The server is the source of truth.
+
+### Model Fallback & Parsing
 
 ````ts
 function parsePredictionResult(rawText: string): PredictionResult {
   const cleanedText = rawText.replace(/```json|```/g, '').trim()
   const parsed = JSON.parse(cleanedText) as PredictionResult
 
-  // Validate the shape before trusting it
   if (
     typeof parsed !== 'object' ||
+    parsed === null ||
     typeof parsed.survived !== 'boolean' ||
     typeof parsed.title !== 'string' ||
     typeof parsed.story !== 'string'
@@ -388,18 +935,21 @@ function parsePredictionResult(rawText: string): PredictionResult {
     throw new Error('Invalid prediction payload from model.')
   }
 
+  if (parsed.survived === false && typeof parsed.deathCause !== 'string') {
+    throw new Error('Missing deathCause for a failed run.')
+  }
+
   return parsed
 }
 ````
 
-Always validate AI output. Never trust that the model returned exactly what you asked for.
+AI models sometimes wrap JSON in markdown code fences (` ```json `). We strip those before parsing. Then we validate the shape explicitly — not just `typeof`, but also the logical constraint ("if they died, there must be a death cause").
 
-### Model Fallback
-
-We try two models in order. If the first fails for any reason other than a quota error, we fall back to the second:
+The model fallback tries `gemini-2.5-flash` first, then `gemini-3.5-flash`:
 
 ```ts
-const MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash'] as const
+let outputText = ''
+let lastError: unknown
 
 for (const model of MODELS) {
   try {
@@ -410,41 +960,63 @@ for (const model of MODELS) {
       break
     }
   } catch (err) {
-    // Quota errors affect all models on the same key — stop immediately
-    if ((err as { status?: number })?.status === 429) break
-    // Other errors — try the next model
+    lastError = err
+    const status = (err as { status?: number })?.status
+    if (status === 429) break // quota error — stop entirely
+    console.warn(`Model ${model} failed, trying next...`, err)
   }
 }
 ```
 
----
+If the first model fails (network issue, transient error), we try the second. If it's a quota error (HTTP 429), we stop immediately — the API key is rate-limited, and retrying won't help.
 
-## Step 5 — Rate Limiting
+### Enforcing the Fate
 
-The Gemini free tier allows ~10 requests per minute. Without protection, a single user spamming "Try Again" could exhaust your daily quota in minutes.
-
-We implement a **sliding window rate limiter** in memory. It tracks the timestamps of each request per IP address and rejects any request that exceeds the limit.
+After parsing, we clobber the AI's verdict with ours:
 
 ```ts
-const WINDOW_MS = 60_000 // 1 minute window
-const MAX_REQUESTS = 5 // max 5 requests per IP per minute
+try {
+  const result = parsePredictionResult(outputText)
+  result.survived = survived // override — we decide, not the AI
+  if (survived) result.deathCause = ''
+  return jsonResponse(result)
+} catch {
+  return jsonResponse({ error: 'Model returned invalid JSON.', raw: outputText }, 502)
+}
+```
+
+This is your safety net. No matter what the AI returns, the `survived` value in the response will always match the `Math.random()` roll. The AI narrates, but we judge.
+
+---
+
+## Step 6 — Rate Limiting
+
+The Gemini free tier allows ~10 requests per minute. A single user clicking "Try Again" rapidly could exhaust your daily quota in minutes.
+
+We implement a **sliding window rate limiter** — one function, a `Map`, and a cleanup interval:
+
+```ts
+const WINDOW_MS = 60_000 // 1 minute
+const MAX_REQUESTS = 5 // max 5 predictions per IP per minute
 
 const ipLog = new Map<string, number[]>()
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now()
-  // Keep only timestamps within the current window
   const timestamps = (ipLog.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
   if (timestamps.length >= MAX_REQUESTS) return true
-  // Record this request
   ipLog.set(ip, [...timestamps, now])
   return false
 }
 ```
 
-Why a sliding window instead of a fixed window? A fixed window resets at a specific clock time, which means a user could make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window prevents this by always looking at the last 60 seconds from _right now_.
+### Why Sliding Window Instead of Fixed Window?
 
-We also prune stale entries every 5 minutes to prevent memory from growing indefinitely:
+A fixed window resets at clock boundaries (e.g., every minute on the minute). This means a user can make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window always looks at the last 60 seconds from _right now_, closing that loophole.
+
+### Memory Cleanup
+
+The `ipLog` grows as new IPs arrive. We prune stale entries every 5 minutes:
 
 ```ts
 setInterval(() => {
@@ -457,7 +1029,7 @@ setInterval(() => {
 }, 5 * 60_000)
 ```
 
-In the request handler, we read the IP from the headers. Behind a proxy or CDN, the real IP is in `X-Forwarded-For`:
+### In the Request Handler
 
 ```ts
 const ip =
@@ -470,31 +1042,37 @@ if (isRateLimited(ip)) {
 }
 ```
 
-On the frontend, we handle the 429 with a thematic message instead of a generic error:
+`X-Forwarded-For` gives the real client IP when the request passes through a proxy (Vercel, Cloudflare, etc.). `cf-connecting-ip` is Cloudflare-specific. The `'unknown'` fallback is for local development.
+
+### On the Frontend
+
+The React component handles the 429 with a thematic error instead of a generic message:
 
 ```jsx
 if (res.status === 429) {
   setResult({
     survived: false,
     title: 'Slow Down, Mortal',
-    story: 'You have tempted fate too many times in a row.',
-    deathCause: 'Rate limited — 5 predictions per minute max.',
+    story: 'You have tempted fate too many times in a row. Even death needs a break from you.',
+    deathCause: 'Rate limited — 5 predictions per minute max. Try again shortly.',
   })
   setStep('result')
   return
 }
 ```
 
+The rate limit error is indistinguishable from a real death outcome. The player sees a title, a story, and a cause — same as any other result. The illusion never breaks.
+
 ---
 
-## Step 6 — The Typewriter Effect
+## Step 7 — The Typewriter Effect
 
-The result screen reveals text character by character, creating a dramatic effect that forces the player to actually read their fate.
+The result screen reveals text character by character. This forces the player to read their fate at a controlled pace — they can't skim past their death.
 
-We build this as a custom React hook that uses `setInterval` to append one character at a time:
+We build this as a custom hook:
 
 ```jsx
-function useTypewriter(text = '', speed = 12, delay = 0) {
+function useTypewriter(text = '', speed = 22, delay = 0) {
   const [displayed, setDisplayed] = useState('')
   const [done, setDone] = useState(false)
 
@@ -504,7 +1082,6 @@ function useTypewriter(text = '', speed = 12, delay = 0) {
     if (!text) return
 
     let i = 0
-    // Optional delay before starting (lets the screen settle)
     const start = setTimeout(() => {
       const interval = setInterval(() => {
         i++
@@ -518,43 +1095,43 @@ function useTypewriter(text = '', speed = 12, delay = 0) {
     }, delay)
 
     return () => clearTimeout(start)
-  }, [text, speed, delay]) // re-runs if the text changes (e.g. new game)
+  }, [text, speed, delay])
 
   return { displayed, done }
 }
 ```
 
-The `done` boolean is essential for sequencing. We use it to chain the animations:
+### Why `speed = 22`?
 
-1. Story starts typing immediately (200ms initial delay)
-2. Death cause starts only _after_ `storyDone === true` (plus 150ms pause)
-3. "Try Again" button fades in only after _all_ text is done
+Faster than 22ms and the text blurs — you can't read as it appears. Slower and the player gets impatient. 22ms is about 45 characters per second, which is slightly slower than natural reading speed. The player always stays ahead of the reveal, which feels satisfying.
+
+### Sequencing the Reveal
+
+We use the `done` boolean to chain three animations:
 
 ```jsx
 function ResultScreen({ result, onReset }) {
-  const { displayed: storyText, done: storyDone } = useTypewriter(result.story, 12, 200)
+  const { displayed: storyText, done: storyDone } = useTypewriter(result.story ?? '', 12, 200)
   const { displayed: deathText, done: deathDone } = useTypewriter(
-    !result.survived ? result.deathCause : '',
+    !result.survived ? (result.deathCause ?? '') : '',
     10,
-    storyDone ? 150 : 99999, // 99999 = effectively "not yet"
+    storyDone ? 150 : 99999, // wait until story is done
   )
 
   const showButton = result.survived ? storyDone : deathDone
-
-  return (
-    // ...
-    <button
-      className={`transition-all duration-500 ${
-        showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
-      }`}
-    >
-      Try Again
-    </button>
-  )
+  // ...
 }
 ```
 
-The blinking cursor is a `<span>` styled with the `blink` keyframe animation we added to `global.css`:
+1. **Story** starts typing after 200ms (lets the screen settle)
+2. **Death cause** starts only after `storyDone === true` + 150ms pause
+3. **"Try Again" button** fades in only after all text is complete
+
+The `99999` fallback when `storyDone` is false effectively disables the death cause timer — it won't fire until `storyDone` becomes true. When the dependency array updates because `storyDone` changed, the hook re-runs with the correct delay.
+
+### The Blinking Cursor
+
+A span with the `blink` keyframe from our global CSS:
 
 ```jsx
 {
@@ -564,73 +1141,56 @@ The blinking cursor is a `<span>` styled with the `blink` keyframe animation we 
 }
 ```
 
-`step-end` is important here — it makes the cursor snap between visible and invisible rather than fading, which looks like a real terminal cursor.
+`step-end` is critical — it makes the cursor snap between visible and invisible without a fade transition, which looks like a real terminal cursor. The death cause cursor uses `bg-red-400` instead of gray to visually distinguish it.
 
 ---
 
 ## Step 8 — Hardening Your Dependencies
 
-You have a working app. Before you ship it, take five minutes to harden your dependency setup against supply chain attacks. This is where most Node.js projects cut corners — don't.
+A working app isn't a shippable app. Take five minutes to protect against supply chain attacks.
 
-### The threat model
+### The Threat
 
-npm packages can be compromised. A maintainer's account gets phished, a malicious version is published, and every project that runs `pnpm install` in the next few hours gets hit. The attack vector is almost always the same: a `postinstall` script that runs arbitrary code the moment the package is installed.
+npm packages can be compromised. A maintainer gets phished, a malicious version is published, and every `pnpm install` in the next few hours is compromised. The attack vector is almost always a `postinstall` script that runs arbitrary code.
 
-pnpm v10+ blocks this by default. Your job is to configure it intentionally.
+### pnpm v11 Hardening
 
-### The configuration file
-
-All of this lives in `pnpm-workspace.yaml` at the project root. Create it if it doesn't exist yet:
+All of this lives in `pnpm-workspace.yaml`:
 
 ```yaml
 # pnpm-workspace.yaml
 allowBuilds:
-  '@google/genai': false   # pure JS/TS, no native binaries needed
-  esbuild: true            # required: Vite uses it to download the correct native binary
-  protobufjs: false        # transitive dep of @google/genai, no build needed
-  sharp: false             # optional Astro image dep, not used in this project
+  '@google/genai': false # pure JS/TS, no native binaries
+  esbuild: true # Vite needs this to download the correct binary
+  protobufjs: false # transitive dep of @google/genai
+  sharp: false # optional Astro image dep, not used here
 blockExoticSubdeps: true
 engineStrict: true
 ignore-scripts: true
-minimumReleaseAge: 1440
-trustPolicy: no-downgrade
+minimumReleaseAge: 1440 # wait 24h before accepting new packages
 ```
 
-### What each setting does
+#### What Each Setting Does
 
-**`ignore-scripts: true`**
+| Setting                    | Effect                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `ignore-scripts: true`     | `postinstall` and other lifecycle scripts never run — by default                                                        |
+| `allowBuilds`              | Explicit allowlist for packages that _must_ run scripts. `esbuild` needs it to download platform binaries               |
+| `blockExoticSubdeps: true` | Blocks transitive deps from git repos or tarball URLs — every package must come from the npm registry                   |
+| `minimumReleaseAge: 1440`  | Refuses packages published less than 24 hours ago. Most compromised packages are detected and pulled within that window |
+| `engineStrict: true`       | Enforces your `engines.node` from `package.json`                                                                        |
 
-Disables all lifecycle scripts globally. Nothing runs on install unless you explicitly say so. This is the master switch.
+The only package in this project that needs `allowBuilds: true` is `esbuild`. Vite uses it to download a platform-specific binary during install. Everything else is pure JavaScript.
 
-**`allowBuilds`**
+How do you know which packages need `true`? Run `pnpm install` without this config. pnpm warns about every package requesting build permissions. You evaluate each one and only approve what you understand.
 
-The explicit allowlist. For every package that actually needs a build step, you set it to `true`. For everything else — especially packages you're not sure about — you set it to `false`.
+### Verify It Works
 
-The only package in this project that needs `true` is `esbuild`. It downloads a platform-specific binary during install. Without it, Vite cannot start. Everything else — `@google/genai`, `protobufjs`, `sharp` — is pure JavaScript and needs no build step.
+```bash
+pnpm install
+```
 
-How do you know which packages need `true`? Run `pnpm install` without the config and see what warns you. Or run `pnpm approve-builds` — it shows you every package requesting build permissions interactively.
-
-**`blockExoticSubdeps: true`**
-
-Prevents transitive dependencies from coming from git repositories, GitHub shorthands (`github:user/repo`), or direct tarball URLs. Every package in your tree must come from the npm registry. This closes the door on a specific attack where a compromised package changes one of its own deps to point at a malicious git repo.
-
-**`trustPolicy: no-downgrade`**
-
-pnpm tracks how much cryptographic evidence a package has — provenance attestations, signed releases, verified publishers. If a new version has *less* trust than the previous one, the install is blocked. This catches compromised accounts that publish a new version without the usual signing pipeline.
-
-**`minimumReleaseAge: 1440`**
-
-pnpm refuses to resolve any package version published less than 24 hours ago. The vast majority of compromised packages are detected and pulled from the registry within that window. This single setting eliminates almost all zero-day supply chain exposure at zero cost to you.
-
-**`engineStrict: true`**
-
-Enforces your `engines.node` constraint from `package.json`. If someone tries to install with Node.js 18 on a project that requires 22+, the install fails immediately with a clear error instead of silently producing broken output.
-
-### Verify it works
-
-After creating the file, run `pnpm install` again. You should see no warnings about blocked scripts — which means everything that *would* have run is now either explicitly allowed or silently skipped.
-
-If you add a new dependency in the future and it needs build permissions, pnpm will tell you. Add it to `allowBuilds` only if you understand why it needs to run a script.
+You should see no warnings about blocked scripts. Every package that _would_ have run a script is now either explicitly allowed or silently skipped.
 
 ---
 
@@ -640,23 +1200,23 @@ If you add a new dependency in the future and it needs build permissions, pnpm w
 pnpm dev
 ```
 
-Open `http://localhost:4321`, pick a scenario, answer the questions, and meet your fate.
+Open `http://localhost:4321`. Pick a scenario. Answer the questions. Meet your fate.
 
 ---
 
 ## What to Try Next
 
-The project is intentionally minimal so it's easy to extend. Here are some ideas:
+The project is deliberately minimal. Here's how to extend it:
 
-**Add a new scenario** — open `src/constants/scenes.ts`, copy an existing scenario block, change the key, label, and questions. That's it. The UI and API pick it up automatically.
+**Add a new scenario** — open `src/constants/scenes.ts`, copy a block, change key/label/questions. The UI and API pick it up automatically. Add a `data-scenario` CSS rule with a new accent color.
 
-**Adjust the survival rate** — change `0.0001` in `predict.ts` to `0.01` for a 1% survival rate, or `0.5` for a coin flip. The prompt adapts automatically.
+**Adjust the survival rate** — change `0.0001` in `predict.ts` to `0.01` for 1% survival, or `0.5` for a coin flip. The prompt adapts automatically because we pre-roll the outcome.
 
-**Add scenario-specific styling** — pass the scenario key as a prop and map it to a color theme or background image.
+**Persist results in localStorage** — save each result with a timestamp. Show a "Death History" screen with every past failure.
 
-**Persist results** — store results in `localStorage` and show a "your history" screen with your past deaths.
+**Add scenario-specific sounds** — play a different ambient loop per scenario during the quiz screen. Web Audio API is easy and dependency-free.
 
-**Deploy to Vercel** — the project ships with `@astrojs/vercel` pre-configured and `output: 'server'` enabled. Run `pnpm build`, then `vercel deploy`. Add `GEMINI_API_KEY` as an environment variable in the Vercel project dashboard before your first deployment.
+**Deploy to Vercel** — the project has `@astrojs/vercel` and `output: 'server'`. Run `pnpm build`, then `vercel deploy`. Add `GEMINI_API_KEY` in the Vercel dashboard before deploying.
 
 ---
 
@@ -665,21 +1225,43 @@ The project is intentionally minimal so it's easy to extend. Here are some ideas
 ```
 survival-quiz/
 ├── src/
+│   ├── assets/
+│   │   └── endings/                # Scenario images (zombie, hogwarts, etc.)
 │   ├── components/
-│   │   └── SurvivalQuiz.jsx     ← All quiz UI and state
+│   │   ├── Calabera.jsx            # Skull SVG (death icon)
+│   │   ├── Fenix.jsx               # Phoenix SVG (survival icon)
+│   │   ├── SurvivalQuiz.jsx        ← All quiz UI and state
+│   │   └── SurvivalQuizIsland.astro ← Image pipeline + client:load wiring
 │   ├── constants/
-│   │   └── scenes.ts            ← All scenario data
+│   │   └── scenes.ts               ← All scenario data
 │   ├── layouts/
-│   │   └── Layout.astro         ← HTML shell
+│   │   └── Layout.astro            ← HTML shell
 │   ├── pages/
-│   │   ├── index.astro          ← Entry point
+│   │   ├── index.astro             ← Entry point
 │   │   └── api/
-│   │       └── predict.ts       ← Gemini API endpoint
+│   │       └── predict.ts          ← Gemini API endpoint
 │   └── styles/
-│       └── global.css           ← Tailwind + animations
+│       └── global.css              ← Tailwind + theme + animations
 ├── astro.config.mjs
-├── .env                         ← GEMINI_API_KEY (never commit)
+├── .env                            ← GEMINI_API_KEY (never commit)
+├── .env.example                    ← Key name without value
+├── pnpm-workspace.yaml             ← Supply chain hardening
 └── package.json
 ```
 
-You built a full-stack AI web app with a server-side API, structured AI prompting, rate limiting, and polished UI animations. Not bad for one afternoon. 💀
+You built a full-stack AI web app with a server-side API, structured prompting, sliding-window rate limiting, per-scenario theming, and supply-chain hardened dependencies.
+
+Not bad for one afternoon. 💀
+
+---
+
+_Built with Astro, React, Tailwind CSS, and Google Gemini._
+**Codedex Challenge**
+
+---
+
+## 🏆 Challenge
+
+This tutorial was built as part of the **Codédex June 2026 Project Tutorial Challenge**. If you followed along and built your own version, share it!
+
+👉 [Project Tutorial Challenge — June 2026](https://www.codedex.io/community/monthly-challenge/UXl5qgB24DBLoatPpOWP) 📝✨
