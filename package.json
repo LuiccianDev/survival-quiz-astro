@@ -2,6 +2,30 @@
   "name": "survival-quiz",
   "type": "module",
   "version": "0.0.1",
+  "private": true,
+  "description": "An AI-powered survival quiz where players face impossible scenarios and Gemini narrates their inevitable fate.",
+  "keywords": [
+    "astro",
+    "react",
+    "tailwindcss",
+    "gemini",
+    "ai",
+    "quiz",
+    "game",
+    "typescript",
+    "islands-architecture",
+    "ssr"
+  ],
+  "author": "LuiccianDev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LuiccianDev/survival-quiz-astro.git"
+  },
+  "homepage": "https://github.com/LuiccianDev/survival-quiz-astro#readme",
+  "bugs": {
+    "url": "https://github.com/LuiccianDev/survival-quiz-astro/issues"
+  },
   "engines": {
     "node": ">=22.12.0"
   },

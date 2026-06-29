@@ -46,8 +46,8 @@ The outcome is always predetermined. Gemini doesn't decide if you live or die â€
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/survival-quiz.git
-cd survival-quiz
+git clone https://github.com/LuiccianDev/survival-quiz-astro.git
+cd survival-quiz-astro
 pnpm install
 ```
 
