@@ -1,0 +1,25 @@
+---
+import { getImage } from 'astro:assets'
+import SurvivalQuiz from './SurvivalQuiz.jsx'
+
+import zombieRaw from '../assets/endings/zombie-apocalypse.webp'
+import hogwartsRaw from '../assets/endings/hogwarts.webp'
+import forbiddenLoveRaw from '../assets/endings/forbidden-love.webp'
+import gotRaw from '../assets/endings/game-of-thrones.webp'
+
+const [zombieImg, hogwartsImg, forbiddenLoveImg, gotImg] = await Promise.all([
+  getImage({ src: zombieRaw, format: 'webp', quality: 100 }),
+  getImage({ src: hogwartsRaw, format: 'webp', quality: 100 }),
+  getImage({ src: forbiddenLoveRaw, format: 'webp', quality: 100 }),
+  getImage({ src: gotRaw, format: 'webp', quality: 100 }),
+])
+
+const sceneImages = {
+  zombie: zombieImg.src,
+  hogwarts: hogwartsImg.src,
+  doomed_love: forbiddenLoveImg.src,
+  got: gotImg.src,
+}
+---
+
+<SurvivalQuiz client:load sceneImages={sceneImages} />
