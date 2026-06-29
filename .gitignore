@@ -26,3 +26,4 @@ pnpm-debug.log*
 .kiro/
 skills-lock.json
 .vercel/
+.playwright-cli/
