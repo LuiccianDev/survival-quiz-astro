@@ -1,3 +1,10 @@
+allowBuilds:
+  '@google/genai': false   # pure JS/TS, no native binaries needed
+  esbuild: true            # required: Vite uses it to download the correct native binary
+  protobufjs: false        # transitive dep of @google/genai, no build needed
+  sharp: false             # optional Astro image dep, not used in this project
+blockExoticSubdeps: true   # block transitive deps from git/tarball sources
 engineStrict: true
 ignore-scripts: true
-minimumReleaseAge: 1440
+minimumReleaseAge: 1440    # wait 24h before installing newly published versions (default in v11)
+trustPolicy: no-downgrade  # block packages whose trust level has decreased vs previous releases
