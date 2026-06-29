@@ -1256,4 +1256,12 @@ Not bad for one afternoon. 💀
 ---
 
 _Built with Astro, React, Tailwind CSS, and Google Gemini._
-_Want to share your build? Tag it with **#WouldYouSurvive** and **#CodeDex**._
+**Codedex Challenge**
+
+---
+
+## 🏆 Challenge
+
+This tutorial was built as part of the **Codédex June 2026 Project Tutorial Challenge**. If you followed along and built your own version, share it!
+
+👉 [Project Tutorial Challenge — June 2026](https://www.codedex.io/community/monthly-challenge/UXl5qgB24DBLoatPpOWP) 📝✨
