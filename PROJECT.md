@@ -12,15 +12,15 @@ A technical reference for the "Would You Survive?" project. Use this document to
 
 ## Tech Stack
 
-| Tool | Version | Role |
-|------|---------|------|
-| Astro | ^7.0.3 | Framework — routing, SSR, Islands architecture |
-| React | ^19.2.7 | Interactive UI components (quiz state machine) |
-| Tailwind CSS | 4.3.1 | Utility-first styling |
-| `@google/genai` | 2.10.0 | Gemini AI SDK |
-| TypeScript | (via Astro) | Type safety for shared data contracts |
-| pnpm | — | Package manager |
-| Node.js | >=22.12.0 | Runtime |
+| Tool            | Version     | Role                                           |
+| --------------- | ----------- | ---------------------------------------------- |
+| Astro           | ^7.0.3      | Framework — routing, SSR, Islands architecture |
+| React           | ^19.2.7     | Interactive UI components (quiz state machine) |
+| Tailwind CSS    | 4.3.1       | Utility-first styling                          |
+| `@google/genai` | 2.10.0      | Gemini AI SDK                                  |
+| TypeScript      | (via Astro) | Type safety for shared data contracts          |
+| pnpm            | —           | Package manager                                |
+| Node.js         | >=22.12.0   | Runtime                                        |
 
 ---
 
@@ -101,12 +101,12 @@ Each step renders a completely different screen. There is no component tree bran
 
 ```ts
 type Scenario = {
-  label: string         // Display name in the UI
+  label: string // Display name in the UI
   questions: Question[] // Must contain exactly 5 questions
 }
 
 type Question = {
-  q: string       // Question text
+  q: string // Question text
   options: string[] // Must contain exactly 4 answer options
 }
 
@@ -115,12 +115,12 @@ const SCENARIOS: Record<string, Scenario>
 
 ### Available Scenarios
 
-| Key | Label | Theme |
-|-----|-------|-------|
-| `zombie` | Zombie Apocalypse | Survival horror |
-| `hogwarts` | Hogwarts | Fantasy |
-| `doomed_love` | Forbidden Love | Tragic romance |
-| `got` | Game of Thrones | Political fantasy |
+| Key           | Label             | Theme             |
+| ------------- | ----------------- | ----------------- |
+| `zombie`      | Zombie Apocalypse | Survival horror   |
+| `hogwarts`    | Hogwarts          | Fantasy           |
+| `doomed_love` | Forbidden Love    | Tragic romance    |
+| `got`         | Game of Thrones   | Political fantasy |
 
 ### Adding a New Scenario
 
@@ -180,12 +180,12 @@ Content-Type: application/json
 
 #### Response — Errors
 
-| Status | Condition |
-|--------|-----------|
-| `400` | Missing body, invalid JSON, or missing/invalid `scenario` or `answers` |
-| `429` | IP rate limit exceeded (5 req/min) or Gemini quota exceeded |
-| `500` | `GEMINI_API_KEY` environment variable not set |
-| `502` | All Gemini models failed to return a valid response |
+| Status | Condition                                                              |
+| ------ | ---------------------------------------------------------------------- |
+| `400`  | Missing body, invalid JSON, or missing/invalid `scenario` or `answers` |
+| `429`  | IP rate limit exceeded (5 req/min) or Gemini quota exceeded            |
+| `500`  | `GEMINI_API_KEY` environment variable not set                          |
+| `502`  | All Gemini models failed to return a valid response                    |
 
 ---
 
@@ -193,13 +193,14 @@ Content-Type: application/json
 
 **Location:** `src/pages/api/predict.ts` (module-level, persists for the process lifetime)
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| `WINDOW_MS` | `60_000` | Sliding window duration in milliseconds (1 minute) |
-| `MAX_REQUESTS` | `5` | Maximum requests per IP within the window |
-| Cleanup interval | `300_000` | Stale entries are pruned every 5 minutes |
+| Parameter        | Value     | Description                                        |
+| ---------------- | --------- | -------------------------------------------------- |
+| `WINDOW_MS`      | `60_000`  | Sliding window duration in milliseconds (1 minute) |
+| `MAX_REQUESTS`   | `5`       | Maximum requests per IP within the window          |
+| Cleanup interval | `300_000` | Stale entries are pruned every 5 minutes           |
 
 **IP detection order:**
+
 1. `X-Forwarded-For` header (first entry, for proxied/CDN traffic)
 2. `CF-Connecting-IP` header (Cloudflare)
 3. Falls back to `"unknown"` if neither header is present
@@ -221,25 +222,25 @@ The loop iterates in order. On success, it breaks. On a `429` (quota error), it 
 ### Survival Probability
 
 ```ts
-const survivalRoll = Math.random()       // 0.0 – 1.0
-const survived = survivalRoll <= 0.0001  // true ~0.01% of the time
+const survivalRoll = Math.random() // 0.0 – 1.0
+const survived = survivalRoll <= 0.0001 // true ~0.01% of the time
 ```
 
 To change the survival rate, update the threshold:
 
-| Threshold | Approximate survival rate |
-|-----------|--------------------------|
+| Threshold | Approximate survival rate           |
+| --------- | ----------------------------------- |
 | `0.0001`  | 0.01% (current — nearly always die) |
-| `0.01`    | 1% |
-| `0.1`     | 10% |
-| `0.5`     | 50% (coin flip) |
+| `0.01`    | 1%                                  |
+| `0.1`     | 10%                                 |
+| `0.5`     | 50% (coin flip)                     |
 
 ### Prompt Strategy
 
 The prompt communicates the predetermined outcome to the model and instructs it to narrate accordingly. After receiving the response, the server enforces the correct `survived` value regardless of what the model returned:
 
 ```ts
-result.survived = survived       // override AI output
+result.survived = survived // override AI output
 if (survived) result.deathCause = ''
 ```
 
@@ -255,15 +256,15 @@ The main component. Manages all quiz state and renders the correct screen based 
 
 **State:**
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `step` | `'select' \| 'quiz' \| 'loading' \| 'result'` | Current screen |
-| `scenario` | `string \| null` | Selected scenario key |
-| `answers` | `string[]` | Collected answers so far |
-| `currentQ` | `number` | Index of the current question (0–4) |
-| `result` | `PredictionResult \| null` | API response |
-| `hoveredScenario` | `string \| null` | For hover styling on scenario list |
-| `selectedOption` | `string \| null` | Briefly set on click before advancing |
+| Variable          | Type                                          | Description                           |
+| ----------------- | --------------------------------------------- | ------------------------------------- |
+| `step`            | `'select' \| 'quiz' \| 'loading' \| 'result'` | Current screen                        |
+| `scenario`        | `string \| null`                              | Selected scenario key                 |
+| `answers`         | `string[]`                                    | Collected answers so far              |
+| `currentQ`        | `number`                                      | Index of the current question (0–4)   |
+| `result`          | `PredictionResult \| null`                    | API response                          |
+| `hoveredScenario` | `string \| null`                              | For hover styling on scenario list    |
+| `selectedOption`  | `string \| null`                              | Briefly set on click before advancing |
 
 ### `ResultScreen`
 
@@ -275,11 +276,11 @@ Renders the verdict with typewriter animations. Uses `useTypewriter` twice — o
 
 **Type:** Custom React Hook
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `text` | `string` | `''` | Full text to reveal |
-| `speed` | `number` | `22` | Milliseconds per character |
-| `delay` | `number` | `0` | Milliseconds before typing starts |
+| Parameter | Type     | Default | Description                       |
+| --------- | -------- | ------- | --------------------------------- |
+| `text`    | `string` | `''`    | Full text to reveal               |
+| `speed`   | `number` | `22`    | Milliseconds per character        |
+| `delay`   | `number` | `0`     | Milliseconds before typing starts |
 
 **Returns:** `{ displayed: string, done: boolean }`
 
@@ -295,17 +296,17 @@ A radio-style button row. Renders a filled circle when `selected`, an outlined c
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GEMINI_API_KEY` | Yes | Google AI Studio API key. Used server-side only in `predict.ts`. Never exposed to the browser. |
+| Variable         | Required | Description                                                                                    |
+| ---------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY` | Yes      | Google AI Studio API key. Used server-side only in `predict.ts`. Never exposed to the browser. |
 
 ---
 
 ## Development Commands
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start development server at `http://localhost:4321` |
-| `pnpm build` | Build for production |
-| `pnpm preview` | Preview the production build locally |
-| `pnpm format` | Format all files with Prettier |
+| Command        | Description                                         |
+| -------------- | --------------------------------------------------- |
+| `pnpm dev`     | Start development server at `http://localhost:4321` |
+| `pnpm build`   | Build for production                                |
+| `pnpm preview` | Preview the production build locally                |
+| `pnpm format`  | Format all files with Prettier                      |

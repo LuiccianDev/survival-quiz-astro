@@ -51,6 +51,7 @@ pnpm install
 ```
 
 When the Astro setup wizard asks, choose:
+
 - **Template:** Empty
 - **TypeScript:** Yes (Strict)
 - **Install dependencies:** Yes
@@ -86,8 +87,13 @@ Create `src/styles/global.css` and import Tailwind plus a custom animation we'll
 @import 'tailwindcss';
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 ```
 
@@ -130,12 +136,12 @@ export const SCENARIOS = {
 
 Each scenario follows this contract:
 
-| Field       | Type       | Description                         |
-|-------------|------------|-------------------------------------|
-| `label`     | `string`   | Display name shown in the UI        |
-| `questions` | `array`    | Array of 5 question objects         |
-| `q`         | `string`   | The question text                   |
-| `options`   | `string[]` | Exactly 4 answer choices            |
+| Field       | Type       | Description                  |
+| ----------- | ---------- | ---------------------------- |
+| `label`     | `string`   | Display name shown in the UI |
+| `questions` | `array`    | Array of 5 question objects  |
+| `q`         | `string`   | The question text            |
+| `options`   | `string[]` | Exactly 4 answer choices     |
 
 Why TypeScript here? Because this object is consumed by both the React component (for rendering) and the API endpoint (for the prompt). A shared typed structure catches mistakes at build time instead of runtime.
 
@@ -146,12 +152,11 @@ Why TypeScript here? Because this object is consumed by both the React component
 Astro separates **layout** (the HTML shell) from **pages** (the content). Create the layout first:
 
 ```astro
-<!-- src/layouts/Layout.astro -->
 ---
 import '../styles/global.css'
 ---
 
-<!doctype html>
+<!-- src/layouts/Layout.astro --><!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -164,7 +169,8 @@ import '../styles/global.css'
 </html>
 
 <style>
-  html, body {
+  html,
+  body {
     margin: 0;
     width: 100%;
     height: 100%;
@@ -176,12 +182,12 @@ import '../styles/global.css'
 The `<slot />` is where page content gets injected. Now create the page:
 
 ```astro
-<!-- src/pages/index.astro -->
 ---
 import Layout from '../layouts/Layout.astro'
 import SurvivalQuiz from '../components/SurvivalQuiz.jsx'
 ---
 
+<!-- src/pages/index.astro -->
 <Layout>
   <SurvivalQuiz client:load />
 </Layout>
@@ -191,9 +197,10 @@ Notice `client:load` on the React component. This is the **Astro Islands** patte
 
 ### Understanding Astro Islands
 
-By default, Astro renders everything to static HTML. No JavaScript reaches the browser unless you explicitly opt in. `client:load` tells Astro: *"hydrate this component on the client immediately after the page loads."*
+By default, Astro renders everything to static HTML. No JavaScript reaches the browser unless you explicitly opt in. `client:load` tells Astro: _"hydrate this component on the client immediately after the page loads."_
 
 This means:
+
 - The page shell (HTML, CSS) loads instantly with zero JS
 - The React quiz component loads its JS separately, only when needed
 - Other parts of the page stay static and fast
@@ -249,10 +256,12 @@ function OptionRow({ label, selected, onClick }) {
       ].join(' ')}
     >
       {/* The radio circle */}
-      <span className={[
-        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-        selected ? 'border-white bg-white' : 'border-gray-600',
-      ].join(' ')}>
+      <span
+        className={[
+          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+          selected ? 'border-white bg-white' : 'border-gray-600',
+        ].join(' ')}
+      >
         {selected && <span className="h-2 w-2 rounded-full bg-[#1a1a1a]" />}
       </span>
       <span className={`text-base ${selected ? 'font-semibold text-white' : 'font-normal'}`}>
@@ -269,9 +278,9 @@ When a player clicks an option, we want them to see their selection highlighted 
 
 ```jsx
 function handleOptionClick(opt) {
-  setSelectedOption(opt)           // show it selected
+  setSelectedOption(opt) // show it selected
   setTimeout(() => {
-    answer(opt)                    // advance after 300ms
+    answer(opt) // advance after 300ms
     setSelectedOption(null)
   }, 300)
 }
@@ -280,9 +289,9 @@ function answer(option) {
   const next = [...answers, option]
   setAnswers(next)
   if (currentQ + 1 < questions.length) {
-    setCurrentQ(currentQ + 1)      // next question
+    setCurrentQ(currentQ + 1) // next question
   } else {
-    submitAnswers(next)            // last question — submit
+    submitAnswers(next) // last question — submit
   }
 }
 ```
@@ -314,7 +323,7 @@ The first line is critical for Astro SSR:
 export const prerender = false
 ```
 
-Without this, Astro would try to pre-render this endpoint at build time and discard it. `prerender = false` tells Astro: *"this route must run dynamically on every request."*
+Without this, Astro would try to pre-render this endpoint at build time and discard it. `prerender = false` tells Astro: _"this route must run dynamically on every request."_
 
 ### Deciding Fate Before Calling the AI
 
@@ -332,9 +341,10 @@ THE FATE HAS ALREADY BEEN DECIDED:
 
 The player answered: ${JSON.stringify(answers)}
 
-${survived
-  ? `The player survived — an almost impossible outcome. Write a story that feels like a miracle.`
-  : `The player has died. Write a creative, dramatic, darkly funny cause of death
+${
+  survived
+    ? `The player survived — an almost impossible outcome. Write a story that feels like a miracle.`
+    : `The player has died. Write a creative, dramatic, darkly funny cause of death
      connected to their specific answers. Be theatrical. Be merciless.`
 }
 
@@ -358,7 +368,7 @@ Why this approach instead of letting the AI decide?
 
 AI models sometimes wrap JSON in markdown code fences (` ```json ``` `). We strip those before parsing:
 
-```ts
+````ts
 function parsePredictionResult(rawText: string): PredictionResult {
   const cleanedText = rawText.replace(/```json|```/g, '').trim()
   const parsed = JSON.parse(cleanedText) as PredictionResult
@@ -375,7 +385,7 @@ function parsePredictionResult(rawText: string): PredictionResult {
 
   return parsed
 }
-```
+````
 
 Always validate AI output. Never trust that the model returned exactly what you asked for.
 
@@ -390,7 +400,10 @@ for (const model of MODELS) {
   try {
     const interaction = await ai.interactions.create({ model, input: prompt })
     const text = interaction.output_text?.trim() ?? ''
-    if (text) { outputText = text; break }
+    if (text) {
+      outputText = text
+      break
+    }
   } catch (err) {
     // Quota errors affect all models on the same key — stop immediately
     if ((err as { status?: number })?.status === 429) break
@@ -408,8 +421,8 @@ The Gemini free tier allows ~10 requests per minute. Without protection, a singl
 We implement a **sliding window rate limiter** in memory. It tracks the timestamps of each request per IP address and rejects any request that exceeds the limit.
 
 ```ts
-const WINDOW_MS = 60_000   // 1 minute window
-const MAX_REQUESTS = 5     // max 5 requests per IP per minute
+const WINDOW_MS = 60_000 // 1 minute window
+const MAX_REQUESTS = 5 // max 5 requests per IP per minute
 
 const ipLog = new Map<string, number[]>()
 
@@ -424,7 +437,7 @@ function isRateLimited(ip: string): boolean {
 }
 ```
 
-Why a sliding window instead of a fixed window? A fixed window resets at a specific clock time, which means a user could make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window prevents this by always looking at the last 60 seconds from *right now*.
+Why a sliding window instead of a fixed window? A fixed window resets at a specific clock time, which means a user could make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window prevents this by always looking at the last 60 seconds from _right now_.
 
 We also prune stale entries every 5 minutes to prevent memory from growing indefinitely:
 
@@ -509,8 +522,8 @@ function useTypewriter(text = '', speed = 12, delay = 0) {
 The `done` boolean is essential for sequencing. We use it to chain the animations:
 
 1. Story starts typing immediately (200ms initial delay)
-2. Death cause starts only *after* `storyDone === true` (plus 150ms pause)
-3. "Try Again" button fades in only after *all* text is done
+2. Death cause starts only _after_ `storyDone === true` (plus 150ms pause)
+3. "Try Again" button fades in only after _all_ text is done
 
 ```jsx
 function ResultScreen({ result, onReset }) {
@@ -518,16 +531,18 @@ function ResultScreen({ result, onReset }) {
   const { displayed: deathText, done: deathDone } = useTypewriter(
     !result.survived ? result.deathCause : '',
     10,
-    storyDone ? 150 : 99999  // 99999 = effectively "not yet"
+    storyDone ? 150 : 99999, // 99999 = effectively "not yet"
   )
 
   const showButton = result.survived ? storyDone : deathDone
 
   return (
     // ...
-    <button className={`transition-all duration-500 ${
-      showButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-    }`}>
+    <button
+      className={`transition-all duration-500 ${
+        showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
+      }`}
+    >
       Try Again
     </button>
   )
@@ -537,9 +552,11 @@ function ResultScreen({ result, onReset }) {
 The blinking cursor is a `<span>` styled with the `blink` keyframe animation we added to `global.css`:
 
 ```jsx
-{!storyDone && (
-  <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
-)}
+{
+  !storyDone && (
+    <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
+  )
+}
 ```
 
 `step-end` is important here — it makes the cursor snap between visible and invisible rather than fading, which looks like a real terminal cursor.
