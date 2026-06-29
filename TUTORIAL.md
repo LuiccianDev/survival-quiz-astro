@@ -2,9 +2,9 @@
 
 > **"Would You Survive?"** — a darkly comedic quiz where players face impossible scenarios and Google Gemini decides their fate. Spoiler: 99.99% of players die horribly.
 
-**🏆 Codédex Project Tutorial** — *LGTM tier target*
+**🏆 Codédex Project Tutorial** — _LGTM tier target_
 
-This is not a "paste this and pray" tutorial. Every decision here has a reason — from the architecture (why Astro Islands instead of pure React?) to the AI prompt design (why do we decide the outcome *before* calling Gemini?). You'll understand *why* each piece exists, not just *how* to wire it up.
+This is not a "paste this and pray" tutorial. Every decision here has a reason — from the architecture (why Astro Islands instead of pure React?) to the AI prompt design (why do we decide the outcome _before_ calling Gemini?). You'll understand _why_ each piece exists, not just _how_ to wire it up.
 
 By the end, you'll have a full-stack AI-powered web app deployed on Vercel, and you'll know:
 
@@ -60,11 +60,11 @@ pnpm install
 
 When the Astro wizard asks:
 
-| Prompt | Answer |
-| ------ | ------ |
-| Template | **Empty** |
-| TypeScript | **Yes (strict)** |
-| Install deps | **Yes** |
+| Prompt       | Answer           |
+| ------------ | ---------------- |
+| Template     | **Empty**        |
+| TypeScript   | **Yes (strict)** |
+| Install deps | **Yes**          |
 
 Now add React, Tailwind, and the Gemini SDK:
 
@@ -80,10 +80,10 @@ pnpm add @google/genai @astrojs/vercel
 
 ```js
 // @ts-check
-import { defineConfig } from 'astro/config';
-import tailwindcss from "@tailwindcss/vite";
-import react from '@astrojs/react';
-import vercel from '@astrojs/vercel';
+import { defineConfig } from 'astro/config'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@astrojs/react'
+import vercel from '@astrojs/vercel'
 
 export default defineConfig({
   output: 'server',
@@ -92,7 +92,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-});
+})
 ```
 
 `output: 'server'` is the key. Without it, Astro would pre-render every page to static HTML at build time — and our API endpoint would never run. With `server` mode, every request is handled live.
@@ -120,14 +120,27 @@ Tailwind v4 uses `@theme` to define design tokens. This is where we declare our 
   --accent: #fff;
 }
 
-[data-scenario='zombie']    { --accent: #c5d5b8; }
-[data-scenario='hogwarts']  { --accent: #c4c9e8; }
-[data-scenario='doomed_love'] { --accent: #e8c4cd; }
-[data-scenario='got']       { --accent: #e8dcc4; }
+[data-scenario='zombie'] {
+  --accent: #c5d5b8;
+}
+[data-scenario='hogwarts'] {
+  --accent: #c4c9e8;
+}
+[data-scenario='doomed_love'] {
+  --accent: #e8c4cd;
+}
+[data-scenario='got'] {
+  --accent: #e8dcc4;
+}
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 ```
 
@@ -145,12 +158,6 @@ GEMINI_API_KEY=your_key_here
 
 Add `.env` to your `.gitignore`. **Never commit API keys.**
 
-Also create `.env.example` with the key name but no value, so future contributors know what to set:
-
-```
-GEMINI_API_KEY=
-```
-
 ---
 
 ## Step 1 — The Scenarios (Data Layer)
@@ -162,65 +169,105 @@ export const SCENARIOS = {
   zombie: {
     label: 'Zombie Apocalypse',
     questions: [
-      { q: 'What is your first move when the alarm sounds?',
-        options: ['Hide', 'Run', 'Fight', 'Find others'] },
-      { q: 'Your weapon of choice?',
-        options: ['Bat', 'Axe', 'Gun', 'None'] },
-      { q: 'Alone or in a group?',
-        options: ['Alone', 'Small group', 'Large group', 'Depends'] },
-      { q: 'Where do you shelter?',
-        options: ['Mall', 'Forest', 'Underground', 'Rooftop'] },
-      { q: 'Would you sacrifice someone to escape?',
-        options: ['Yes', 'No', 'Only if necessary', 'Never'] },
+      {
+        q: 'What is your first move when the alarm sounds?',
+        options: ['Hide', 'Run', 'Fight', 'Find others'],
+      },
+      { q: 'Your weapon of choice?', options: ['Bat', 'Axe', 'Gun', 'None'] },
+      { q: 'Alone or in a group?', options: ['Alone', 'Small group', 'Large group', 'Depends'] },
+      { q: 'Where do you shelter?', options: ['Mall', 'Forest', 'Underground', 'Rooftop'] },
+      {
+        q: 'Would you sacrifice someone to escape?',
+        options: ['Yes', 'No', 'Only if necessary', 'Never'],
+      },
     ],
   },
   hogwarts: {
     label: 'Hogwarts',
     questions: [
-      { q: 'Your Hogwarts house?',
-        options: ['Gryffindor', 'Slytherin', 'Hufflepuff', 'Ravenclaw'] },
-      { q: 'First spell you master?',
-        options: ['Expelliarmus', 'Avada Kedavra', 'Lumos', 'Accio'] },
-      { q: 'Facing Voldemort, you...?',
-        options: ['Fight', 'Run', 'Negotiate', 'Hide'] },
-      { q: 'Your magical creature companion?',
-        options: ['Owl', 'Phoenix', 'Dragon', 'None'] },
-      { q: 'Dark Arts: use them or refuse?',
-        options: ['Use them', 'Refuse always', 'Only in emergencies', 'Learn but never use'] },
+      {
+        q: 'Your Hogwarts house?',
+        options: ['Gryffindor', 'Slytherin', 'Hufflepuff', 'Ravenclaw'],
+      },
+      {
+        q: 'First spell you master?',
+        options: ['Expelliarmus', 'Avada Kedavra', 'Lumos', 'Accio'],
+      },
+      { q: 'Facing Voldemort, you...?', options: ['Fight', 'Run', 'Negotiate', 'Hide'] },
+      { q: 'Your magical creature companion?', options: ['Owl', 'Phoenix', 'Dragon', 'None'] },
+      {
+        q: 'Dark Arts: use them or refuse?',
+        options: ['Use them', 'Refuse always', 'Only in emergencies', 'Learn but never use'],
+      },
     ],
   },
   doomed_love: {
     label: 'Forbidden Love',
     questions: [
-      { q: 'You fall for someone your family would never accept. What do you do?',
-        options: ['Tell your family immediately', 'Keep it completely secret',
-                  'Run away together', 'End it before it starts'] },
-      { q: 'Your lover asks you to choose between them and your family. You...?',
-        options: ['Choose your family', 'Choose your lover', 'Refuse to choose', 'Ask for more time'] },
-      { q: 'You receive a letter saying your lover has died. Before you can verify it, you...?',
-        options: ['Rush to confirm in person', 'Collapse and believe it',
-                  'Ask someone you trust', 'Wait for more news'] },
-      { q: 'The only way to be together is to fake your own death. Do you go through with it?',
-        options: ['Yes, without hesitation', "No, it's too dangerous",
-                  'Only if they go first', 'Find another way'] },
-      { q: 'Everything has gone wrong. Your last chance is a single desperate act. You...?',
-        options: ['Do it — love is worth it', 'Hesitate and lose the moment',
-                  'Walk away and survive alone', 'Trust that it will work out'] },
+      {
+        q: 'You fall for someone your family would never accept. What do you do?',
+        options: [
+          'Tell your family immediately',
+          'Keep it completely secret',
+          'Run away together',
+          'End it before it starts',
+        ],
+      },
+      {
+        q: 'Your lover asks you to choose between them and your family. You...?',
+        options: [
+          'Choose your family',
+          'Choose your lover',
+          'Refuse to choose',
+          'Ask for more time',
+        ],
+      },
+      {
+        q: 'You receive a letter saying your lover has died. Before you can verify it, you...?',
+        options: [
+          'Rush to confirm in person',
+          'Collapse and believe it',
+          'Ask someone you trust',
+          'Wait for more news',
+        ],
+      },
+      {
+        q: 'The only way to be together is to fake your own death. Do you go through with it?',
+        options: [
+          'Yes, without hesitation',
+          "No, it's too dangerous",
+          'Only if they go first',
+          'Find another way',
+        ],
+      },
+      {
+        q: 'Everything has gone wrong. Your last chance is a single desperate act. You...?',
+        options: [
+          'Do it — love is worth it',
+          'Hesitate and lose the moment',
+          'Walk away and survive alone',
+          'Trust that it will work out',
+        ],
+      },
     ],
   },
   got: {
     label: 'Game of Thrones',
     questions: [
-      { q: 'Your house allegiance?',
-        options: ['Stark', 'Lannister', 'Targaryen', 'No one'] },
-      { q: 'Strategy for survival?',
-        options: ['Betrayal', 'Loyalty', 'Isolation', 'Gold'] },
-      { q: 'Winter is coming. You...?',
-        options: ['Stockpile', 'Migrate south', 'Ignore it', 'Prepare army'] },
-      { q: 'The throne is yours to take. How?',
-        options: ['War', 'Marriage', 'Politics', 'Dragons'] },
-      { q: 'A trusted ally betrays you. You...?',
-        options: ['Execute them', 'Forgive', 'Exile', 'Use it against them'] },
+      { q: 'Your house allegiance?', options: ['Stark', 'Lannister', 'Targaryen', 'No one'] },
+      { q: 'Strategy for survival?', options: ['Betrayal', 'Loyalty', 'Isolation', 'Gold'] },
+      {
+        q: 'Winter is coming. You...?',
+        options: ['Stockpile', 'Migrate south', 'Ignore it', 'Prepare army'],
+      },
+      {
+        q: 'The throne is yours to take. How?',
+        options: ['War', 'Marriage', 'Politics', 'Dragons'],
+      },
+      {
+        q: 'A trusted ally betrays you. You...?',
+        options: ['Execute them', 'Forgive', 'Exile', 'Use it against them'],
+      },
     ],
   },
 }
@@ -263,8 +310,11 @@ import '../styles/global.css'
 </html>
 
 <style>
-  html, body {
-    margin: 0; width: 100%; height: 100%;
+  html,
+  body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
     background-color: #0f0f0f;
   }
 </style>
@@ -337,7 +387,7 @@ If you build this as a plain React SPA, every visitor downloads React, your quiz
 - React and the quiz component load **only after** the page is interactive
 - Everything else on the page (if there were anything else) stays as static HTML
 
-For this quiz — which is 100% interactive — the difference is negligible. But the pattern matters. The **discipline** of separating static from interactive forces you to think about what *needs* JavaScript and what doesn't.
+For this quiz — which is 100% interactive — the difference is negligible. But the pattern matters. The **discipline** of separating static from interactive forces you to think about what _needs_ JavaScript and what doesn't.
 
 ### Per-Scenario Theming (The `data-scenario` System)
 
@@ -389,11 +439,21 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
 
   const questions = scenario ? SCENARIOS[scenario].questions : []
 
-  function selectScenario(key) { /* ... */ }
-  function handleOptionClick(opt) { /* ... */ }
-  function answer(option) { /* ... */ }
-  async function submitAnswers(finalAnswers) { /* ... */ }
-  function reset() { /* ... */ }
+  function selectScenario(key) {
+    /* ... */
+  }
+  function handleOptionClick(opt) {
+    /* ... */
+  }
+  function answer(option) {
+    /* ... */
+  }
+  async function submitAnswers(finalAnswers) {
+    /* ... */
+  }
+  function reset() {
+    /* ... */
+  }
 
   if (step === 'select') return /* ... */
   if (step === 'quiz') return /* ... */
@@ -430,11 +490,15 @@ if (step === 'select')
                   : 'bg-surface-800 text-gray-400',
               ].join(' ')}
             >
-              <span className={[
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-                hoveredScenario === key ? 'border-[var(--accent)]' : 'border-gray-600',
-              ].join(' ')} />
-              <span className={`text-base ${hoveredScenario === key ? 'font-semibold text-white' : 'font-normal'}`}>
+              <span
+                className={[
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+                  hoveredScenario === key ? 'border-[var(--accent)]' : 'border-gray-600',
+                ].join(' ')}
+              />
+              <span
+                className={`text-base ${hoveredScenario === key ? 'font-semibold text-white' : 'font-normal'}`}
+              >
                 {val.label}
               </span>
             </button>
@@ -452,7 +516,10 @@ The scenario buttons use a **hover state** (`hoveredScenario`) rather than CSS `
 ```jsx
 if (step === 'quiz')
   return (
-    <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12"
+    >
       <div className="w-full max-w-md">
         <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
           Question {currentQ + 1} of {questions.length}
@@ -501,10 +568,12 @@ function OptionRow({ label, selected, onClick }) {
           : 'bg-surface-800 text-gray-400 hover:bg-surface-750 hover:text-white',
       ].join(' ')}
     >
-      <span className={[
-        'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-        selected ? 'border-[var(--accent)] bg-[var(--accent)]' : 'border-gray-600',
-      ].join(' ')}>
+      <span
+        className={[
+          'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
+          selected ? 'border-[var(--accent)] bg-[var(--accent)]' : 'border-gray-600',
+        ].join(' ')}
+      >
         {selected && <span className="h-2 w-2 rounded-full bg-surface-800" />}
       </span>
       <span className={`text-base ${selected ? 'font-semibold text-white' : 'font-normal'}`}>
@@ -558,7 +627,10 @@ A thin decorative line used between the title and content on every screen. Extra
 ```jsx
 if (step === 'loading')
   return (
-    <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6">
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6"
+    >
       <div className="flex flex-col items-center gap-4 text-center">
         <Calabera className="animate-bounce text-[var(--accent)]" width={56} height={56} />
         <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
@@ -588,7 +660,10 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
   const sceneImage = sceneImages?.[scenario]
 
   return (
-    <div data-scenario={scenario} className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row">
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row"
+    >
       {/* Image panel */}
       <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
         {sceneImage && (
@@ -599,8 +674,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
               className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-106"
             />
             {/* Vignette overlay */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-transparent
-                           md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-surface-900" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface-900 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-surface-900" />
           </>
         )}
       </div>
@@ -611,11 +685,15 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
           {/* Icon + title */}
           <div className="mb-4 flex items-center gap-3">
             <span className="text-4xl">
-              {result.survived
-                ? <Fenix className="inline-block text-amber-400" width={40} height={40} />
-                : <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />}
+              {result.survived ? (
+                <Fenix className="inline-block text-amber-400" width={40} height={40} />
+              ) : (
+                <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />
+              )}
             </span>
-            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">{result.title}</h2>
+            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">
+              {result.title}
+            </h2>
           </div>
 
           <div className="mb-5 h-px w-full bg-surface-700" />
@@ -623,16 +701,24 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
           {/* Story — typewriter rendered here */}
           <p className="min-h-[4rem] text-sm leading-relaxed text-gray-400">
             {storyText}
-            {!storyDone && <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />}
+            {!storyDone && (
+              <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
+            )}
           </p>
 
           {/* Death cause */}
           {!result.survived && (
-            <div className={`mt-4 rounded-xl bg-surface-800 px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}>
-              <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">Cause of death</p>
+            <div
+              className={`mt-4 rounded-xl bg-surface-800 px-4 py-3 transition-opacity duration-300 ${storyDone ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <p className="mb-1 text-xs font-semibold tracking-widest text-gray-600 uppercase">
+                Cause of death
+              </p>
               <p className="text-sm text-red-400">
                 {deathText}
-                {storyDone && !deathDone && <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-red-400 align-middle" />}
+                {storyDone && !deathDone && (
+                  <span className="ml-0.5 inline-block h-3 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-red-400 align-middle" />
+                )}
               </p>
             </div>
           )}
@@ -640,9 +726,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
           {/* Try Again button */}
           <button
             onClick={onReset}
-            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500
-                        hover:bg-[var(--accent)] hover:text-surface-900 active:scale-95
-                        ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
+            className={`mt-6 w-full rounded-2xl bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all duration-500 hover:bg-[var(--accent)] hover:text-surface-900 active:scale-95 ${showButton ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
           >
             Try Again
           </button>
@@ -685,8 +769,15 @@ And `src/components/Fenix.jsx` for the phoenix:
 ```jsx
 export default function Fenix({ className = '', width = 36, height = 36 }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height}
-         viewBox="0 0 512 512" className={className} role="img" aria-label="fenix">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      viewBox="0 0 512 512"
+      className={className}
+      role="img"
+      aria-label="fenix"
+    >
       {/* SVG path data for a phoenix icon */}
     </svg>
   )
@@ -829,15 +920,18 @@ Three reasons for pre-rolling:
 
 ### Model Fallback & Parsing
 
-```ts
+````ts
 function parsePredictionResult(rawText: string): PredictionResult {
   const cleanedText = rawText.replace(/```json|```/g, '').trim()
   const parsed = JSON.parse(cleanedText) as PredictionResult
 
-  if (typeof parsed !== 'object' || parsed === null ||
-      typeof parsed.survived !== 'boolean' ||
-      typeof parsed.title !== 'string' ||
-      typeof parsed.story !== 'string') {
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    typeof parsed.survived !== 'boolean' ||
+    typeof parsed.title !== 'string' ||
+    typeof parsed.story !== 'string'
+  ) {
     throw new Error('Invalid prediction payload from model.')
   }
 
@@ -847,7 +941,7 @@ function parsePredictionResult(rawText: string): PredictionResult {
 
   return parsed
 }
-```
+````
 
 AI models sometimes wrap JSON in markdown code fences (` ```json `). We strip those before parsing. Then we validate the shape explicitly — not just `typeof`, but also the logical constraint ("if they died, there must be a death cause").
 
@@ -861,7 +955,10 @@ for (const model of MODELS) {
   try {
     const interaction = await ai.interactions.create({ model, input: prompt })
     const text = interaction.output_text?.trim() ?? ''
-    if (text) { outputText = text; break }
+    if (text) {
+      outputText = text
+      break
+    }
   } catch (err) {
     lastError = err
     const status = (err as { status?: number })?.status
@@ -880,7 +977,7 @@ After parsing, we clobber the AI's verdict with ours:
 ```ts
 try {
   const result = parsePredictionResult(outputText)
-  result.survived = survived      // override — we decide, not the AI
+  result.survived = survived // override — we decide, not the AI
   if (survived) result.deathCause = ''
   return jsonResponse(result)
 } catch {
@@ -899,8 +996,8 @@ The Gemini free tier allows ~10 requests per minute. A single user clicking "Try
 We implement a **sliding window rate limiter** — one function, a `Map`, and a cleanup interval:
 
 ```ts
-const WINDOW_MS = 60_000    // 1 minute
-const MAX_REQUESTS = 5      // max 5 predictions per IP per minute
+const WINDOW_MS = 60_000 // 1 minute
+const MAX_REQUESTS = 5 // max 5 predictions per IP per minute
 
 const ipLog = new Map<string, number[]>()
 
@@ -915,7 +1012,7 @@ function isRateLimited(ip: string): boolean {
 
 ### Why Sliding Window Instead of Fixed Window?
 
-A fixed window resets at clock boundaries (e.g., every minute on the minute). This means a user can make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window always looks at the last 60 seconds from *right now*, closing that loophole.
+A fixed window resets at clock boundaries (e.g., every minute on the minute). This means a user can make 5 requests at 11:59:59 and 5 more at 12:00:01 — 10 requests in 2 seconds. The sliding window always looks at the last 60 seconds from _right now_, closing that loophole.
 
 ### Memory Cleanup
 
@@ -1037,9 +1134,11 @@ The `99999` fallback when `storyDone` is false effectively disables the death ca
 A span with the `blink` keyframe from our global CSS:
 
 ```jsx
-{!storyDone && (
-  <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
-)}
+{
+  !storyDone && (
+    <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-[blink_0.7s_step-end_infinite] bg-gray-500 align-middle" />
+  )
+}
 ```
 
 `step-end` is critical — it makes the cursor snap between visible and invisible without a fade transition, which looks like a real terminal cursor. The death cause cursor uses `bg-red-400` instead of gray to visually distinguish it.
@@ -1061,25 +1160,25 @@ All of this lives in `pnpm-workspace.yaml`:
 ```yaml
 # pnpm-workspace.yaml
 allowBuilds:
-  '@google/genai': false   # pure JS/TS, no native binaries
-  esbuild: true            # Vite needs this to download the correct binary
-  protobufjs: false        # transitive dep of @google/genai
-  sharp: false             # optional Astro image dep, not used here
+  '@google/genai': false # pure JS/TS, no native binaries
+  esbuild: true # Vite needs this to download the correct binary
+  protobufjs: false # transitive dep of @google/genai
+  sharp: false # optional Astro image dep, not used here
 blockExoticSubdeps: true
 engineStrict: true
 ignore-scripts: true
-minimumReleaseAge: 1440    # wait 24h before accepting new packages
+minimumReleaseAge: 1440 # wait 24h before accepting new packages
 ```
 
 #### What Each Setting Does
 
-| Setting | Effect |
-| ------- | ------ |
-| `ignore-scripts: true` | `postinstall` and other lifecycle scripts never run — by default |
-| `allowBuilds` | Explicit allowlist for packages that *must* run scripts. `esbuild` needs it to download platform binaries |
-| `blockExoticSubdeps: true` | Blocks transitive deps from git repos or tarball URLs — every package must come from the npm registry |
-| `minimumReleaseAge: 1440` | Refuses packages published less than 24 hours ago. Most compromised packages are detected and pulled within that window |
-| `engineStrict: true` | Enforces your `engines.node` from `package.json` |
+| Setting                    | Effect                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `ignore-scripts: true`     | `postinstall` and other lifecycle scripts never run — by default                                                        |
+| `allowBuilds`              | Explicit allowlist for packages that _must_ run scripts. `esbuild` needs it to download platform binaries               |
+| `blockExoticSubdeps: true` | Blocks transitive deps from git repos or tarball URLs — every package must come from the npm registry                   |
+| `minimumReleaseAge: 1440`  | Refuses packages published less than 24 hours ago. Most compromised packages are detected and pulled within that window |
+| `engineStrict: true`       | Enforces your `engines.node` from `package.json`                                                                        |
 
 The only package in this project that needs `allowBuilds: true` is `esbuild`. Vite uses it to download a platform-specific binary during install. Everything else is pure JavaScript.
 
@@ -1091,7 +1190,7 @@ How do you know which packages need `true`? Run `pnpm install` without this conf
 pnpm install
 ```
 
-You should see no warnings about blocked scripts. Every package that *would* have run a script is now either explicitly allowed or silently skipped.
+You should see no warnings about blocked scripts. Every package that _would_ have run a script is now either explicitly allowed or silently skipped.
 
 ---
 
@@ -1156,5 +1255,5 @@ Not bad for one afternoon. 💀
 
 ---
 
-*Built with Astro, React, Tailwind CSS, and Google Gemini.*
-*Want to share your build? Tag it with **#WouldYouSurvive** and **#CodeDex**.*
+_Built with Astro, React, Tailwind CSS, and Google Gemini._
+_Want to share your build? Tag it with **#WouldYouSurvive** and **#CodeDex**._

@@ -28,6 +28,7 @@ The outcome is always predetermined. Gemini doesn't decide if you live or die �
 - **Server-rendered** via Astro + Vercel adapter (`output: 'server'`)
 - **AI narration** via Gemini API with structured JSON output
 - **Typewriter animation** revealing your verdict character by character
+- **View Transition** between the loading screen and the result — a 💀 skull mask is painted onto a `<canvas>` at runtime and set as a CSS custom property (`--vt-mask-url`), enabling a custom skull-shaped reveal animation (progressive enhancement — falls back gracefully on unsupported browsers)
 - **Rate limiter** protecting the free API quota (5 req/min per IP)
 - **Model fallback** chain (`gemini-2.5-flash` → `gemini-3.5-flash`)
 - **Dark UI** with radio-style option buttons and progress bar
@@ -100,13 +101,21 @@ When a player finishes the quiz, the React component sends a `POST` to `/api/pre
 
 ```
 src/
-├── components/SurvivalQuiz.jsx   # React state machine + all UI
-├── constants/scenes.ts           # Scenario and question data
-├── layouts/Layout.astro          # HTML shell
+├── assets/
+│   ├── endings/                           # Scenario images (processed at build time)
+│   └── calabera.svg                       # Skull SVG icon
+├── components/
+│   ├── Calabera.astro                     # Reusable skull icon wrapper (size + color via CSS)
+│   ├── Calabera.jsx                       # Skull SVG icon (React)
+│   ├── Fenix.jsx                          # Phoenix SVG icon (React, in progress)
+│   ├── SurvivalQuiz.jsx                   # React state machine + all UI
+│   └── SurvivalQuizIsland.astro           # Image pipeline + client:load wiring
+├── constants/scenes.ts                    # Scenario and question data
+├── layouts/Layout.astro                   # HTML shell
 ├── pages/
-│   ├── index.astro               # Entry point — mounts React island
-│   └── api/predict.ts            # POST /api/predict — SSR Gemini endpoint
-└── styles/global.css             # Tailwind + custom keyframes
+│   ├── index.astro                        # Entry point — includes SurvivalQuizIsland
+│   └── api/predict.ts                     # POST /api/predict — SSR Gemini endpoint
+└── styles/global.css                      # Tailwind + custom keyframes
 ```
 
 ## Adding Scenarios

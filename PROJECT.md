@@ -30,21 +30,28 @@ A technical reference for the "Would You Survive?" project. Use this document to
 ```
 survival-quiz/
 ├── src/
+│   ├── assets/
+│   │   └── endings/                   # Scenario images (webp) — processed by getImage
 │   ├── components/
-│   │   └── SurvivalQuiz.jsx     # React quiz component (client-side island)
+│   │   ├── Calabera.jsx               # Skull SVG icon (death result, loading screen)
+│   │   ├── Fenix.jsx                  # Phoenix SVG icon (survival result)
+│   │   ├── SurvivalQuiz.jsx           # React quiz component (client-side island)
+│   │   └── SurvivalQuizIsland.astro   # Astro wrapper — runs image pipeline + mounts React island
 │   ├── constants/
-│   │   └── scenes.ts            # All scenario and question data
+│   │   └── scenes.ts                  # All scenario and question data
 │   ├── layouts/
-│   │   └── Layout.astro         # HTML document shell
+│   │   └── Layout.astro               # HTML document shell
 │   ├── pages/
-│   │   ├── index.astro          # Application entry point
+│   │   ├── index.astro                # Entry point — includes SurvivalQuizIsland
 │   │   └── api/
-│   │       └── predict.ts       # POST /api/predict — Gemini SSR endpoint
+│   │       └── predict.ts             # POST /api/predict — Gemini SSR endpoint
 │   └── styles/
-│       └── global.css           # Tailwind import + custom keyframes
-├── .env                         # Environment variables (not committed)
-├── astro.config.mjs             # Astro + Vite + Tailwind + Vercel adapter configuration
+│       └── global.css                 # Tailwind @theme + per-scenario accent colors + keyframes
+├── .env                               # GEMINI_API_KEY (not committed)
+├── .env.example                       # Key name without value (for contributors)
+├── astro.config.mjs                   # Astro + Vite + Tailwind + Vercel adapter configuration
 ├── package.json
+├── pnpm-workspace.yaml                # Supply chain security hardening
 └── tsconfig.json
 ```
 
@@ -57,7 +64,10 @@ survival-quiz/
 ```
 Browser
   │
-  ├─ GET /          → index.astro renders Layout + SurvivalQuiz (static shell)
+  ├─ GET /          → index.astro includes SurvivalQuizIsland.astro
+  │                   SurvivalQuizIsland.astro runs getImage × 4 (Astro image pipeline)
+  │                   Passes sceneImages prop to SurvivalQuiz
+  │                   Renders Layout + SurvivalQuizIsland (static shell)
   │                   client:load hydrates SurvivalQuiz as a React island
   │
   └─ POST /api/predict
@@ -82,10 +92,13 @@ The project uses `output: 'server'` mode with the `@astrojs/vercel` adapter (`as
 
 ### Astro Islands
 
-`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The rest of the page (layout, head, body shell) is rendered server-side on every request. This means:
+`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The image pipeline and island wiring are encapsulated in `SurvivalQuizIsland.astro` — an Astro component that runs `getImage` for all four scenario images at request time, assembles the `sceneImages` map, and mounts `SurvivalQuiz` with `client:load`. `index.astro` simply includes this component, keeping the entry point minimal.
+
+The rest of the page (layout, head, body shell) is rendered server-side on every request. This means:
 
 - The document appears instantly — no JS blocking paint
 - React hydrates the quiz component after the page loads
+- Image URLs are correctly hashed and optimised at request time without touching the React bundle
 - The component runs entirely in the browser; the API endpoint runs entirely on the server
 
 The separation is enforced by the framework: `.astro` files run at build time or on the server. `.jsx` files with `client:*` directives run in the browser.
@@ -158,16 +171,18 @@ The `SCENARIOS` record is the single source of truth for all quiz content. Every
 
 ### Available Scenarios
 
-| Key           | Label             | Theme             |
-| ------------- | ----------------- | ----------------- |
-| `zombie`      | Zombie Apocalypse | Survival horror   |
-| `hogwarts`    | Hogwarts          | Fantasy           |
-| `doomed_love` | Forbidden Love    | Tragic romance    |
-| `got`         | Game of Thrones   | Political fantasy |
+| Key           | Label             | Accent Color | Theme             |
+| ------------- | ----------------- | ------------ | ----------------- |
+| `zombie`      | Zombie Apocalypse | `#c5d5b8`    | Survival horror   |
+| `hogwarts`    | Hogwarts          | `#c4c9e8`    | Fantasy           |
+| `doomed_love` | Forbidden Love    | `#e8c4cd`    | Tragic romance    |
+| `got`         | Game of Thrones   | `#e8dcc4`    | Political fantasy |
+
+The accent color is assigned via CSS in `global.css` using the `data-scenario` attribute and the `--accent` custom property. The React component sets `data-scenario={scenario}` on the root quiz div, and every element using `var(--accent)` shifts color accordingly.
 
 ### Adding a New Scenario
 
-Add a new key to the `SCENARIOS` object in `src/constants/scenes.ts`. No other files need to change — the UI and API consume `SCENARIOS` dynamically.
+Add a new key to the `SCENARIOS` object in `src/constants/scenes.ts`. Then add a `data-scenario` CSS rule with an accent color. No other files need to change — the UI and API consume `SCENARIOS` dynamically.
 
 ```ts
 export const SCENARIOS = {
@@ -183,6 +198,13 @@ export const SCENARIOS = {
       { q: 'Question 5?', options: ['A', 'B', 'C', 'D'] },
     ],
   },
+}
+```
+
+```css
+/* src/styles/global.css */
+[data-scenario='my_scenario'] {
+  --accent: #your-color;
 }
 ```
 
@@ -297,6 +319,12 @@ if (survived) result.deathCause = ''
 
 The main component. Manages all quiz state and renders the correct screen based on `step`.
 
+**Props:**
+
+| Prop          | Type                     | Description                                                                                                                                                                        |
+| ------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sceneImages` | `Record<string, string>` | Map of scenario key → optimised image URL. Built in `SurvivalQuizIsland.astro` via `getImage` and passed as a server-side prop so the component never imports raw assets directly. |
+
 **State:**
 
 | Variable          | Type                                          | Description                           |
@@ -309,11 +337,23 @@ The main component. Manages all quiz state and renders the correct screen based 
 | `hoveredScenario` | `string \| null`                              | For hover styling on scenario list    |
 | `selectedOption`  | `string \| null`                              | Briefly set on click before advancing |
 
+**Error handling:** On API errors, `submitAnswers` catches the exception and transitions to `result` with a fallback `PredictionResult` (survived = false, title "Connection Lost"). On 429 rate limit responses, it transitions to `result` with a thematic "Slow Down, Mortal" result. Both cases are indistinguishable from real AI verdicts.
+
 ### `ResultScreen`
 
-**Props:** `{ result: PredictionResult, onReset: () => void }`
+**Props:** `{ result: PredictionResult, scenario: string | null, sceneImages: Record<string, string>, onReset: () => void }`
 
-Renders the verdict with typewriter animations. Uses `useTypewriter` twice — once for `story`, once for `deathCause`. The "Try Again" button is always in the DOM but invisible until typing completes (prevents layout shift on reveal).
+Renders the verdict in a horizontal split layout. The scenario image occupies the left panel (`md:w-1/2`, full height, `object-cover`) with a vignette gradient overlay. On mobile, the image collapses to a fixed `h-64` top panel and the content stacks below.
+
+The content panel contains:
+
+- A **SVG icon** (`Calabera.jsx` for death, `Fenix.jsx` for survival)
+- The **dramatic title** in `var(--accent)` color
+- The **story text** revealed via typewriter
+- An optional **death cause** card (`bg-surface-800`, red text) that fades in after story typing
+- A **"Try Again" button** that fades in (`opacity-0 → opacity-100` with `translate-y-2 → translate-y-0`) after all text is complete
+
+Uses `useTypewriter` twice — once for `story`, once for `deathCause`. The "Try Again" button is always in the DOM but invisible (`opacity-0 pointer-events-none`) until typing completes, preventing layout shift on reveal.
 
 ### `useTypewriter(text, speed, delay)`
 
@@ -327,13 +367,47 @@ Renders the verdict with typewriter animations. Uses `useTypewriter` twice — o
 
 **Returns:** `{ displayed: string, done: boolean }`
 
-Resets and restarts whenever `text` changes.
+Resets and restarts whenever `text` changes. The `done` boolean is `true` when the full text has been revealed.
 
 ### `OptionRow`
 
 **Props:** `{ label: string, selected: boolean, onClick: () => void }`
 
-A radio-style button row. Renders a filled circle when `selected`, an outlined circle otherwise.
+A radio-style button row. Renders a filled circle when `selected`, an outlined circle otherwise. Background lifts from `bg-surface-800` to `bg-surface-700` and the radio circle fills with `var(--accent)` when selected.
+
+### `Calabera.jsx`
+
+**File:** `src/components/Calabera.jsx`
+
+A sugar-skull-inspired SVG icon component. Renders inline SVG with `fill="currentColor"` so color is inherited from the parent's `text-*` class.
+
+**Props:**
+
+| Prop        | Type     | Default | Description                             |
+| ----------- | -------- | ------- | --------------------------------------- |
+| `className` | `string` | `''`    | Tailwind/CSS classes for color and size |
+| `width`     | `number` | `36`    | `width` attribute on the SVG element    |
+| `height`    | `number` | `36`    | `height` attribute on the SVG element   |
+
+**Usage:**
+
+```jsx
+<Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />
+```
+
+### `Fenix.jsx`
+
+**File:** `src/components/Fenix.jsx`
+
+A phoenix SVG icon component, used on the result screen when the player survives. Uses the same prop interface as `Calabera.jsx`.
+
+**Props:** Same as `Calabera.jsx` (`className`, `width`, `height`).
+
+**Usage:**
+
+```jsx
+<Fenix className="inline-block text-amber-400" width={40} height={40} />
+```
 
 ---
 

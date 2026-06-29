@@ -33,10 +33,12 @@ Prevents any transitive dependency from being resolved from a git repository, Gi
 ## Trust Policy (`trustPolicy`)
 
 ```yaml
-trustPolicy: no-downgrade
+# trustPolicy: no-downgrade
 ```
 
-pnpm tracks the trust level of published packages (signed provenance, verified publisher, etc.). With `no-downgrade`, if a new version has _less_ trust evidence than its previous release, the install is blocked.
+This setting is **commented out** in the current configuration. When active, pnpm tracks the trust level of published packages (signed provenance, verified publisher, etc.). With `no-downgrade`, if a new version has _less_ trust evidence than its previous release, the install is blocked.
+
+It is disabled because the current dependency tree does not include packages with provenance attestations, so the check would have no effect. If you add dependencies that publish with npm provenance (e.g., from the Vercel or Astro ecosystems), uncomment this line to gain the protection.
 
 ---
 
