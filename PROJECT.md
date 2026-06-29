@@ -30,8 +30,6 @@ A technical reference for the "Would You Survive?" project. Use this document to
 ```
 survival-quiz/
 ├── src/
-│   ├── assets/
-│   │   └── endings/                   # Scenario images (webp) — processed by getImage
 │   ├── components/
 │   │   ├── Calabera.jsx               # Skull SVG icon (death result, loading screen)
 │   │   ├── Fenix.jsx                  # Phoenix SVG icon (survival result)
@@ -65,7 +63,7 @@ survival-quiz/
 Browser
   │
   ├─ GET /          → index.astro includes SurvivalQuizIsland.astro
-  │                   SurvivalQuizIsland.astro runs getImage × 4 (Astro image pipeline)
+  │                   SurvivalQuizIsland.astro builds sceneImages map (static /endings/* paths)
   │                   Passes sceneImages prop to SurvivalQuiz
   │                   Renders Layout + SurvivalQuizIsland (static shell)
   │                   client:load hydrates SurvivalQuiz as a React island
@@ -92,7 +90,7 @@ The project uses `output: 'server'` mode with the `@astrojs/vercel` adapter (`as
 
 ### Astro Islands
 
-`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The image pipeline and island wiring are encapsulated in `SurvivalQuizIsland.astro` — an Astro component that runs `getImage` for all four scenario images at request time, assembles the `sceneImages` map, and mounts `SurvivalQuiz` with `client:load`. `index.astro` simply includes this component, keeping the entry point minimal.
+`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The island wiring is encapsulated in `SurvivalQuizIsland.astro` — an Astro component that assembles the `sceneImages` map using static paths to assets in `public/endings/`, then mounts `SurvivalQuiz` with `client:load`. `index.astro` simply includes this component, keeping the entry point minimal.
 
 The rest of the page (layout, head, body shell) is rendered server-side on every request. This means:
 
@@ -323,7 +321,7 @@ The main component. Manages all quiz state and renders the correct screen based 
 
 | Prop          | Type                     | Description                                                                                                                                                                        |
 | ------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sceneImages` | `Record<string, string>` | Map of scenario key → optimised image URL. Built in `SurvivalQuizIsland.astro` via `getImage` and passed as a server-side prop so the component never imports raw assets directly. |
+| `sceneImages` | `Record<string, string>` | Map of scenario key → static image URL (e.g. `/endings/zombie-apocalypse.webp`). Built in `SurvivalQuizIsland.astro` and passed as a prop so the component never imports raw assets directly. |
 
 **State:**
 

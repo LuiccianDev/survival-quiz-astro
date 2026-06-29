@@ -101,21 +101,26 @@ When a player finishes the quiz, the React component sends a `POST` to `/api/pre
 
 ```
 src/
-├── assets/
-│   ├── endings/                           # Scenario images (processed at build time)
-│   └── calabera.svg                       # Skull SVG icon
 ├── components/
 │   ├── Calabera.astro                     # Reusable skull icon wrapper (size + color via CSS)
 │   ├── Calabera.jsx                       # Skull SVG icon (React)
 │   ├── Fenix.jsx                          # Phoenix SVG icon (React, in progress)
 │   ├── SurvivalQuiz.jsx                   # React state machine + all UI
-│   └── SurvivalQuizIsland.astro           # Image pipeline + client:load wiring
+│   └── SurvivalQuizIsland.astro           # Static image map + client:load wiring
 ├── constants/scenes.ts                    # Scenario and question data
 ├── layouts/Layout.astro                   # HTML shell
 ├── pages/
 │   ├── index.astro                        # Entry point — includes SurvivalQuizIsland
 │   └── api/predict.ts                     # POST /api/predict — SSR Gemini endpoint
 └── styles/global.css                      # Tailwind + custom keyframes
+public/
+├── endings/                               # Scenario images served as static assets
+│   ├── zombie-apocalypse.webp
+│   ├── hogwarts.webp
+│   ├── forbidden-love.webp
+│   └── game-of-thrones.webp
+├── favicon.svg
+└── screenshots/
 ```
 
 ## Adding Scenarios

@@ -1,19 +1,21 @@
 # Build an AI Survival Quiz with Astro, React & Gemini
 
-> **"Would You Survive?"** — a darkly comedic quiz where players face impossible scenarios and Google Gemini decides their fate. Spoiler: 99.99% of players die horribly.
+**🏆 Codédex Project Tutorial**
 
-**🏆 Codédex Project Tutorial** — _LGTM tier target_
+> _"Would You Survive?"_ — a darkly comedic quiz where players face impossible scenarios and Google Gemini narrates their inevitable fate. Spoiler: 99.99% of players die horribly. You probably will too.
+
+Have you ever wondered if you'd survive a zombie apocalypse? Or make it out of Hogwarts alive? This tutorial walks you through building a full-stack web app that answers that question — and dramatically explains _how_ you died.
 
 This is not a "paste this and pray" tutorial. Every decision here has a reason — from the architecture (why Astro Islands instead of pure React?) to the AI prompt design (why do we decide the outcome _before_ calling Gemini?). You'll understand _why_ each piece exists, not just _how_ to wire it up.
 
-By the end, you'll have a full-stack AI-powered web app deployed on Vercel, and you'll know:
+By the end, you'll have a working app deployed on Vercel and you'll understand:
 
 - Why **Astro Islands** give you React's interactivity without the JS bundle bloat
 - How to build **server-side API endpoints** in Astro that securely call the Gemini API
 - Why you should **pre-roll the outcome** before prompting an AI (and how to enforce it)
 - How to craft **structured prompts** that reliably return parseable JSON
 - How **sliding window rate limiters** work and why they beat fixed windows
-- Why supply chain hardening matters and how `pnpm` v11 can protect you with 3 lines of config
+- Why `public/` and `src/assets/` are not the same thing — and when it breaks your deploy
 
 ---
 
@@ -27,6 +29,8 @@ A four-screen interactive death quiz:
 
 Four scenarios. Five questions each. One AI judge. Zero mercy.
 
+The player picks a scenario — Zombie Apocalypse, Hogwarts, Game of Thrones, or Forbidden Love — answers five strategic questions, and then waits while Google Gemini dramatically narrates their fate. Each scenario has its own color theme, its own image backdrop, and its own flavor of doom.
+
 ![Scenario selection — pick your doom](public/screenshots/01-scenario-selection.png)
 
 _Each scenario gets its own accent color — zombie is pale green, Hogwarts is soft blue, forbidden love is rose, Game of Thrones is gold._
@@ -37,7 +41,17 @@ _Five questions, four options each. A progress bar tracks how close you are to y
 
 ![Death result — full-screen with image and typewriter narration](public/screenshots/03-result-death.png)
 
-_Gemini narrates your death one character at a time. The scenario image looms behind the text._
+_Gemini narrates your death one character at a time. The scenario image fills the left panel. You can't skip it._
+
+Here's the tech powering this:
+
+| Layer | Tool | Why |
+|---|---|---|
+| Framework | Astro 7 | SSR + Islands — ships zero JS by default |
+| UI | React 19 | Interactive quiz state machine |
+| Styling | Tailwind CSS v4 | Dark theme + per-scenario accent colors |
+| AI | Google Gemini | Generates your dramatic death narrative |
+| Deployment | Vercel | Serverless functions for the API endpoint |
 
 ---
 
@@ -331,37 +345,68 @@ Create a bridge component that sits between Astro (server) and React (client):
 ```astro
 ---
 // src/components/SurvivalQuizIsland.astro
-import { getImage } from 'astro:assets'
 import SurvivalQuiz from './SurvivalQuiz.jsx'
 
-import zombieRaw from '../assets/endings/zombie-apocalypse.webp'
-import hogwartsRaw from '../assets/endings/hogwarts.webp'
-import forbiddenLoveRaw from '../assets/endings/forbidden-love.webp'
-import gotRaw from '../assets/endings/game-of-thrones.webp'
-
-const [zombieImg, hogwartsImg, forbiddenLoveImg, gotImg] = await Promise.all([
-  getImage({ src: zombieRaw, format: 'webp', quality: 100 }),
-  getImage({ src: hogwartsRaw, format: 'webp', quality: 100 }),
-  getImage({ src: forbiddenLoveRaw, format: 'webp', quality: 100 }),
-  getImage({ src: gotRaw, format: 'webp', quality: 100 }),
-])
-
 const sceneImages = {
-  zombie: zombieImg.src,
-  hogwarts: hogwartsImg.src,
-  doomed_love: forbiddenLoveImg.src,
-  got: gotImg.src,
+  zombie: '/endings/zombie-apocalypse.webp',
+  hogwarts: '/endings/hogwarts.webp',
+  doomed_love: '/endings/forbidden-love.webp',
+  got: '/endings/game-of-thrones.webp',
 }
 ---
 
 <SurvivalQuiz client:load sceneImages={sceneImages} />
 ```
 
-Everything above the `---` fence runs on the server at request time. `getImage` optimizes each image, generates a content-hashed URL, and returns it. No image-processing library ever reaches the browser.
+This file is doing more than it looks like. Let's unpack every decision.
 
-The `client:load` directive tells Astro: _"Hydrate this React component on the client immediately after the page loads."_ The component receives `sceneImages` as a prop — a plain object mapping scenario keys to optimized image URLs. The React component never imports raw `.webp` files. It doesn't need to know about `astro:assets` at all.
+#### Why a separate `.astro` file instead of importing images directly in React?
 
-This separation matters: if you add a leaderboard page that also shows scenario images, you reuse `getImage` in a new island without touching the React component.
+You might wonder: why not just import the `.webp` files inside `SurvivalQuiz.jsx`? The React component is the one that actually renders them.
+
+The answer is about **where each file runs**. `.astro` files run on the server. `.jsx` files with `client:load` run in the browser. If you import an image inside a React component, it becomes part of the client-side JavaScript bundle — the browser has to download it as part of your JS before it can even request the image file.
+
+By keeping image references in the `.astro` file, we resolve the paths at **request time on the server** and pass the resulting URLs as a plain prop. The React component just receives a string like `/endings/zombie-apocalypse.webp` — it has no idea how that URL was produced. This separation means the image logic can change (CDN, optimization, etc.) without touching the component.
+
+#### Where do the images live — and why does it matter?
+
+The images are placed in `public/endings/`. This is intentional, not arbitrary.
+
+In Astro with `output: 'server'`, images placed in `src/assets/` can be processed by Astro's image pipeline (resize, format conversion, content hashing). But that processing happens inside the serverless function at runtime. The problem: **on Vercel, files in `src/assets/` are not part of the deployed file system** — they only exist during the build step. Once the serverless function runs, those files are gone.
+
+`public/` is different. Anything in `public/` is served directly as a static asset by Vercel's CDN. It never passes through a serverless function. The files are always available, always fast, and the paths never change.
+
+The rule of thumb:
+
+| Where to put it | When to use it |
+|---|---|
+| `src/assets/` | Images you need Astro to **optimize** (resize, convert format) for static pages |
+| `public/` | Images that should be served **as-is** by the CDN, especially in SSR mode |
+
+For this project, since we're running `output: 'server'` on Vercel, `public/` is the correct choice.
+
+#### What does `client:load` actually do?
+
+The `client:load` directive on `<SurvivalQuiz>` tells Astro: _"This component needs JavaScript. Hydrate it immediately after the page loads."_
+
+Without it, the React component would render its HTML server-side and ship **no JavaScript to the browser** — which means no interactivity. The quiz would look correct but do nothing when you click.
+
+Astro has several hydration directives, each with a different trade-off:
+
+| Directive | When it hydrates | Best for |
+|---|---|---|
+| `client:load` | Immediately on page load | Interactive components the user needs right away |
+| `client:idle` | When the browser is idle | Lower-priority widgets |
+| `client:visible` | When it enters the viewport | Components below the fold |
+| `client:only` | Client-side only, no SSR HTML | Components that cannot render on the server |
+
+We use `client:load` because the quiz is the entire page — there's nothing else to load first. The user lands here to interact immediately.
+
+#### The `sceneImages` prop bridge
+
+Notice that `sceneImages` is built in the `.astro` file (server) and passed as a prop to the React component (client). This is the island bridge in action.
+
+The server resolves the image paths. The client receives finished URLs. Neither side knows or cares about the other's implementation. This pattern — **prepare data on the server, pass it as serializable props to the island** — is the key to using Astro Islands correctly. Props must be serializable (strings, numbers, plain objects, arrays) because they cross the server/client boundary as JSON.
 
 ### The Entry Page
 
@@ -1224,14 +1269,14 @@ The project is deliberately minimal. Here's how to extend it:
 
 ```
 survival-quiz/
+├── public/
+│   └── endings/                    # Scenario images (zombie, hogwarts, etc.)
 ├── src/
-│   ├── assets/
-│   │   └── endings/                # Scenario images (zombie, hogwarts, etc.)
 │   ├── components/
 │   │   ├── Calabera.jsx            # Skull SVG (death icon)
 │   │   ├── Fenix.jsx               # Phoenix SVG (survival icon)
 │   │   ├── SurvivalQuiz.jsx        ← All quiz UI and state
-│   │   └── SurvivalQuizIsland.astro ← Image pipeline + client:load wiring
+│   │   └── SurvivalQuizIsland.astro ← Static image map + client:load wiring
 │   ├── constants/
 │   │   └── scenes.ts               ← All scenario data
 │   ├── layouts/
@@ -1243,7 +1288,6 @@ survival-quiz/
 │   └── styles/
 │       └── global.css              ← Tailwind + theme + animations
 ├── astro.config.mjs
-├── .env                            ← GEMINI_API_KEY (never commit)
 ├── .env.example                    ← Key name without value
 ├── pnpm-workspace.yaml             ← Supply chain hardening
 └── package.json
@@ -1255,13 +1299,28 @@ Not bad for one afternoon. 💀
 
 ---
 
-_Built with Astro, React, Tailwind CSS, and Google Gemini._
-**Codedex Challenge**
+## What to Try Next
+
+The project is deliberately minimal so you can take it anywhere. Here are some ideas:
+
+**Add a new scenario** — open `src/constants/scenes.ts`, copy any block, change the key/label/questions. The UI and API consume `SCENARIOS` dynamically — nothing else needs to change. Add a `data-scenario` CSS rule with a new accent color and you're done.
+
+**Adjust the survival rate** — find `survivalRoll <= 0.0001` in `predict.ts` and change the threshold. `0.01` gives you 1% survival, `0.5` is a coin flip. The AI prompt adapts automatically because the outcome is pre-rolled before the prompt is built.
+
+**Persist results in localStorage** — save each result with a timestamp. Show a "Death History" screen with every past failure. Most players die 10+ times before giving up — that's content worth showing.
+
+**Add scenario-specific sounds** — play a different ambient loop per scenario during the quiz. The Web Audio API is dependency-free and surprisingly straightforward.
+
+**Deploy to Vercel** — run `pnpm build`, then `vercel deploy`. Set `GEMINI_API_KEY` in the Vercel dashboard before deploying. That's it — the adapter handles the rest.
 
 ---
 
-## 🏆 Challenge
+_Built with [Astro](https://astro.build), [React](https://react.dev), [Tailwind CSS](https://tailwindcss.com), and [Google Gemini](https://ai.google.dev)._
 
-This tutorial was built as part of the **Codédex June 2026 Project Tutorial Challenge**. If you followed along and built your own version, share it!
+---
 
-👉 [Project Tutorial Challenge — June 2026](https://www.codedex.io/community/monthly-challenge/UXl5qgB24DBLoatPpOWP) 📝✨
+## 🏆 Codédex Challenge
+
+This tutorial was built for the **Codédex June 2026 Project Tutorial Challenge**. If you followed along and built your own version, share it — and leave feedback for other builders too.
+
+👉 [Project Tutorial Challenge — June 2026](https://www.codedex.io/community/monthly-challenge/UXl5qgB24DBLoatPpOWP)

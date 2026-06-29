@@ -44,7 +44,7 @@ flowchart LR
     subgraph Server["Server (Vercel / Node.js)"]
         A[Layout.astro\nHTML shell]
         B[index.astro\nentry point]
-        BI[SurvivalQuizIsland.astro\nprocesses images + mounts island]
+        BI[SurvivalQuizIsland.astro\nbuilds image map + mounts island]
         C[predict.ts\nSSR endpoint]
     end
 
@@ -57,7 +57,6 @@ flowchart LR
 
     B -- renders --> A
     B -- includes --> BI
-    BI -- getImage × 4 --> BI
     A -- slot → --> D
     BI -- sceneImages prop --> E
     E -- fetch POST --> C
@@ -70,7 +69,7 @@ flowchart LR
 - The Gemini API key stays server-side forever
 - The React bundle is the only JS the browser downloads
 
-The image pipeline and React island wiring are co-located in `SurvivalQuizIsland.astro`. This Astro component runs `getImage` for all four scenario images at request time, assembles the `sceneImages` map, and mounts `SurvivalQuiz` with `client:load`. `index.astro` simply includes this island, keeping the entry point clean. The React component never imports raw image assets directly.
+The scenario images live in `public/endings/` and are served as plain static files by Vercel's CDN. `SurvivalQuizIsland.astro` assembles the `sceneImages` map using static paths (`/endings/imagen.webp`) and mounts `SurvivalQuiz` with `client:load`. `index.astro` simply includes this island, keeping the entry point clean. The React component never imports raw image assets directly — it receives the URLs as a prop.
 
 The project uses `output: 'server'` with the `@astrojs/vercel` adapter. Every route is server-rendered on each request — nothing is pre-rendered at build time.
 
