@@ -77,7 +77,10 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
   const sceneImage = sceneImages?.[scenario]
 
   return (
-    <div data-scenario={scenario} className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row">
+    <div
+      data-scenario={scenario}
+      className="flex min-h-screen flex-col bg-surface-900 md:h-screen md:flex-row"
+    >
       {/* Image panel — full height on desktop, fixed height on mobile */}
       <div className="relative h-64 shrink-0 overflow-hidden md:h-full md:w-1/2">
         {sceneImage && (
@@ -100,8 +103,16 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
         <div className="w-full max-w-md">
           {/* Icon + title */}
           <div className="mb-4 flex items-center gap-3">
-            <span className="text-4xl">{result.survived ? <Fenix className="inline-block text-amber-400" width={40} height={40} /> : <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />}</span>
-            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">{result.title}</h2>
+            <span className="text-4xl">
+              {result.survived ? (
+                <Fenix className="inline-block text-amber-400" width={40} height={40} />
+              ) : (
+                <Calabera className="inline-block text-[var(--accent)]" width={40} height={40} />
+              )}
+            </span>
+            <h2 className="text-2xl leading-tight font-bold text-[var(--accent)]">
+              {result.title}
+            </h2>
           </div>
 
           <div className="mb-5 h-px w-full bg-surface-700" />
@@ -272,14 +283,17 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── QUIZ ─── */
   if (step === 'quiz')
     return (
-      <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12">
+      <div
+        data-scenario={scenario}
+        className="flex min-h-screen flex-col items-center justify-center bg-surface-900 px-6 py-12"
+      >
         <div className="w-full max-w-md">
           <p className="mb-6 text-sm font-medium tracking-widest text-gray-500 uppercase">
             Question {currentQ + 1} of {questions.length}
           </p>
           <div className="mb-8 h-1 w-full rounded-full bg-surface-700">
-          <div
-            className="h-1 rounded-full bg-[var(--accent)] transition-all duration-500"
+            <div
+              className="h-1 rounded-full bg-[var(--accent)] transition-all duration-500"
               style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
             />
           </div>
@@ -305,7 +319,10 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
   /* ─── LOADING ─── */
   if (step === 'loading')
     return (
-      <div data-scenario={scenario} className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6">
+      <div
+        data-scenario={scenario}
+        className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface-900 px-6"
+      >
         <div className="flex flex-col items-center gap-4 text-center">
           <Calabera className="animate-bounce text-[var(--accent)]" width={56} height={56} />
           <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
@@ -324,5 +341,8 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
     )
 
   /* ─── RESULT ─── */
-  if (step === 'result') return <ResultScreen result={result} scenario={scenario} sceneImages={sceneImages} onReset={reset} />
+  if (step === 'result')
+    return (
+      <ResultScreen result={result} scenario={scenario} sceneImages={sceneImages} onReset={reset} />
+    )
 }
