@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SCENARIOS } from '../constants/scenes'
+import Calabera from './Calabera.jsx'
+import Fenix from './Fenix.jsx'
 
 /** Typewriter hook — reveals text character by character */
 function useTypewriter(text = '', speed = 22, delay = 0) {
@@ -83,7 +85,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
             <img
               src={sceneImage}
               alt={scenario ?? ''}
-              className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-105"
+              className="h-full w-full object-cover object-center transition-transform duration-700 hover:scale-106"
               loading="eager"
               decoding="async"
             />
@@ -98,7 +100,7 @@ function ResultScreen({ result, scenario, sceneImages, onReset }) {
         <div className="w-full max-w-md">
           {/* Icon + title */}
           <div className="mb-4 flex items-center gap-3">
-            <span className="text-4xl">{result.survived ? '🏆' : '💀'}</span>
+            <span className="text-4xl">{result.survived ? <Fenix className="inline-block text-amber-400" width={40} height={40} /> : <Calabera className="inline-block text-white" width={40} height={40} />}</span>
             <h2 className="text-2xl leading-tight font-bold text-white">{result.title}</h2>
           </div>
 
@@ -305,7 +307,7 @@ export default function SurvivalQuiz({ sceneImages = {} }) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#0f0f0f] px-6">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="animate-bounce text-5xl">💀</div>
+          <Calabera className="animate-bounce text-white" width={56} height={56} />
           <h2 className="text-2xl font-bold text-white">Your fate is being written...</h2>
           <p className="animate-pulse text-sm text-gray-500">The universe is not on your side</p>
           <div className="mt-2 flex gap-2">
