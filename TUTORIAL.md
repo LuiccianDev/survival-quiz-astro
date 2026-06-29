@@ -32,11 +32,11 @@ Here's what the final app looks like in action:
 
 ![Scenario selection — pick your doom](public/screenshots/01-scenario-selection.png)
 
-*Choose from 4 deadly scenarios — each with 5 questions that decide your fate.*
+_Choose from 4 deadly scenarios — each with 5 questions that decide your fate._
 
 ![Death result — AI narrates your demise](public/screenshots/03-result-death.png)
 
-*Gemini writes a dramatic, darkly funny story about exactly how you died.*
+_Gemini writes a dramatic, darkly funny story about exactly how you died._
 
 ## Prerequisites
 
@@ -230,7 +230,7 @@ This is the heart of the app. Create `src/components/SurvivalQuiz.jsx`.
 
 ![Quiz question — 5 questions, 4 options each](public/screenshots/02-quiz-question.png)
 
-*Each question has 4 radio-style options. Pick one and the next question appears after a brief flash of your selection.*
+_Each question has 4 radio-style options. Pick one and the next question appears after a brief flash of your selection._
 
 The component manages a **state machine** with four steps:
 
@@ -599,10 +599,10 @@ All of this lives in `pnpm-workspace.yaml` at the project root. Create it if it 
 ```yaml
 # pnpm-workspace.yaml
 allowBuilds:
-  '@google/genai': false   # pure JS/TS, no native binaries needed
-  esbuild: true            # required: Vite uses it to download the correct native binary
-  protobufjs: false        # transitive dep of @google/genai, no build needed
-  sharp: false             # optional Astro image dep, not used in this project
+  '@google/genai': false # pure JS/TS, no native binaries needed
+  esbuild: true # required: Vite uses it to download the correct native binary
+  protobufjs: false # transitive dep of @google/genai, no build needed
+  sharp: false # optional Astro image dep, not used in this project
 blockExoticSubdeps: true
 engineStrict: true
 ignore-scripts: true
@@ -630,7 +630,7 @@ Prevents transitive dependencies from coming from git repositories, GitHub short
 
 **`trustPolicy: no-downgrade`**
 
-pnpm tracks how much cryptographic evidence a package has — provenance attestations, signed releases, verified publishers. If a new version has *less* trust than the previous one, the install is blocked. This catches compromised accounts that publish a new version without the usual signing pipeline.
+pnpm tracks how much cryptographic evidence a package has — provenance attestations, signed releases, verified publishers. If a new version has _less_ trust than the previous one, the install is blocked. This catches compromised accounts that publish a new version without the usual signing pipeline.
 
 **`minimumReleaseAge: 1440`**
 
@@ -642,7 +642,7 @@ Enforces your `engines.node` constraint from `package.json`. If someone tries to
 
 ### Verify it works
 
-After creating the file, run `pnpm install` again. You should see no warnings about blocked scripts — which means everything that *would* have run is now either explicitly allowed or silently skipped.
+After creating the file, run `pnpm install` again. You should see no warnings about blocked scripts — which means everything that _would_ have run is now either explicitly allowed or silently skipped.
 
 If you add a new dependency in the future and it needs build permissions, pnpm will tell you. Add it to `allowBuilds` only if you understand why it needs to run a script.
 

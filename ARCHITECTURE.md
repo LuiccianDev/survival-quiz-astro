@@ -60,6 +60,7 @@ flowchart LR
 ```
 
 **Why this matters:** Astro renders the HTML on the server and sends zero JavaScript by default. Only the interactive quiz component — marked with `client:load` — gets hydrated on the client. The API endpoint (`predict.ts`) never leaves the server. This separation means:
+
 - The page appears instantly (no JS blocking paint)
 - The Gemini API key stays server-side forever
 - The React bundle is the only JS the browser downloads
@@ -151,6 +152,7 @@ sequenceDiagram
 **Why this matters:** Letting the AI decide would give inconsistent survival rates. AI models don't follow probability instructions reliably. By rolling `Math.random()` first (99.99% death rate) and baking the outcome into the prompt, we guarantee consistency. The server also overrides `result.survived` after parsing — even if the AI ignores the instruction, the correct value wins.
 
 The endpoint has two fallback layers:
+
 1. **Model fallback:** If `gemini-2.5-flash` fails (except quota errors), try `gemini-3.5-flash`
 2. **Rate limiter:** A sliding window prevents one user from exhausting the daily API quota in minutes
 

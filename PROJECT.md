@@ -12,16 +12,16 @@ A technical reference for the "Would You Survive?" project. Use this document to
 
 ## Tech Stack
 
-| Tool            | Version     | Role                                           |
-| --------------- | ----------- | ---------------------------------------------- |
-| Astro           | ^7.0.3      | Framework — routing, SSR, Islands architecture |
-| `@astrojs/vercel` | latest    | Astro adapter — compiles SSR output to Vercel serverless functions |
-| React           | ^19.2.7     | Interactive UI components (quiz state machine) |
-| Tailwind CSS    | 4.3.1       | Utility-first styling                          |
-| `@google/genai` | 2.10.0      | Gemini AI SDK                                  |
-| TypeScript      | (via Astro) | Type safety for shared data contracts          |
-| pnpm            | —           | Package manager                                |
-| Node.js         | >=22.12.0   | Runtime                                        |
+| Tool              | Version     | Role                                                               |
+| ----------------- | ----------- | ------------------------------------------------------------------ |
+| Astro             | ^7.0.3      | Framework — routing, SSR, Islands architecture                     |
+| `@astrojs/vercel` | latest      | Astro adapter — compiles SSR output to Vercel serverless functions |
+| React             | ^19.2.7     | Interactive UI components (quiz state machine)                     |
+| Tailwind CSS      | 4.3.1       | Utility-first styling                                              |
+| `@google/genai`   | 2.10.0      | Gemini AI SDK                                                      |
+| TypeScript        | (via Astro) | Type safety for shared data contracts                              |
+| pnpm              | —           | Package manager                                                    |
+| Node.js           | >=22.12.0   | Runtime                                                            |
 
 ---
 
@@ -114,9 +114,9 @@ Returned by `POST /api/predict` and consumed by `ResultScreen`.
 
 ```ts
 interface PredictionResult {
-  survived: boolean   // Always matches the server's Math.random() roll
-  title: string       // Short dramatic title (max 6 words)
-  story: string       // 2-3 sentence narrative from Gemini
+  survived: boolean // Always matches the server's Math.random() roll
+  title: string // Short dramatic title (max 6 words)
+  story: string // 2-3 sentence narrative from Gemini
   deathCause?: string // Present only when survived === false
 }
 ```
@@ -127,7 +127,7 @@ Sent from `SurvivalQuiz.jsx` to `/api/predict`.
 
 ```ts
 interface PredictionRequest {
-  scenario: string  // Key from SCENARIOS (e.g. "zombie")
+  scenario: string // Key from SCENARIOS (e.g. "zombie")
   answers: string[] // Array of 5 selected option strings
 }
 ```
@@ -138,13 +138,13 @@ Defined in `src/constants/scenes.ts`. Each key maps to a scenario object.
 
 ```ts
 type Scenario = {
-  label: string         // Display name shown in the UI
+  label: string // Display name shown in the UI
   questions: Question[] // Exactly 5 questions
 }
 
 type Question = {
-  q: string             // The question text
-  options: string[]     // Exactly 4 answer choices
+  q: string // The question text
+  options: string[] // Exactly 4 answer choices
 }
 
 const SCENARIOS: Record<string, Scenario>
