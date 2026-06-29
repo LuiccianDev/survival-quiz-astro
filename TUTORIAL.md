@@ -563,7 +563,73 @@ The blinking cursor is a `<span>` styled with the `blink` keyframe animation we 
 
 ---
 
-## Step 7 — Run It
+## Step 8 — Hardening Your Dependencies
+
+You have a working app. Before you ship it, take five minutes to harden your dependency setup against supply chain attacks. This is where most Node.js projects cut corners — don't.
+
+### The threat model
+
+npm packages can be compromised. A maintainer's account gets phished, a malicious version is published, and every project that runs `pnpm install` in the next few hours gets hit. The attack vector is almost always the same: a `postinstall` script that runs arbitrary code the moment the package is installed.
+
+pnpm v10+ blocks this by default. Your job is to configure it intentionally.
+
+### The configuration file
+
+All of this lives in `pnpm-workspace.yaml` at the project root. Create it if it doesn't exist yet:
+
+```yaml
+# pnpm-workspace.yaml
+allowBuilds:
+  '@google/genai': false   # pure JS/TS, no native binaries needed
+  esbuild: true            # required: Vite uses it to download the correct native binary
+  protobufjs: false        # transitive dep of @google/genai, no build needed
+  sharp: false             # optional Astro image dep, not used in this project
+blockExoticSubdeps: true
+engineStrict: true
+ignore-scripts: true
+minimumReleaseAge: 1440
+trustPolicy: no-downgrade
+```
+
+### What each setting does
+
+**`ignore-scripts: true`**
+
+Disables all lifecycle scripts globally. Nothing runs on install unless you explicitly say so. This is the master switch.
+
+**`allowBuilds`**
+
+The explicit allowlist. For every package that actually needs a build step, you set it to `true`. For everything else — especially packages you're not sure about — you set it to `false`.
+
+The only package in this project that needs `true` is `esbuild`. It downloads a platform-specific binary during install. Without it, Vite cannot start. Everything else — `@google/genai`, `protobufjs`, `sharp` — is pure JavaScript and needs no build step.
+
+How do you know which packages need `true`? Run `pnpm install` without the config and see what warns you. Or run `pnpm approve-builds` — it shows you every package requesting build permissions interactively.
+
+**`blockExoticSubdeps: true`**
+
+Prevents transitive dependencies from coming from git repositories, GitHub shorthands (`github:user/repo`), or direct tarball URLs. Every package in your tree must come from the npm registry. This closes the door on a specific attack where a compromised package changes one of its own deps to point at a malicious git repo.
+
+**`trustPolicy: no-downgrade`**
+
+pnpm tracks how much cryptographic evidence a package has — provenance attestations, signed releases, verified publishers. If a new version has *less* trust than the previous one, the install is blocked. This catches compromised accounts that publish a new version without the usual signing pipeline.
+
+**`minimumReleaseAge: 1440`**
+
+pnpm refuses to resolve any package version published less than 24 hours ago. The vast majority of compromised packages are detected and pulled from the registry within that window. This single setting eliminates almost all zero-day supply chain exposure at zero cost to you.
+
+**`engineStrict: true`**
+
+Enforces your `engines.node` constraint from `package.json`. If someone tries to install with Node.js 18 on a project that requires 22+, the install fails immediately with a clear error instead of silently producing broken output.
+
+### Verify it works
+
+After creating the file, run `pnpm install` again. You should see no warnings about blocked scripts — which means everything that *would* have run is now either explicitly allowed or silently skipped.
+
+If you add a new dependency in the future and it needs build permissions, pnpm will tell you. Add it to `allowBuilds` only if you understand why it needs to run a script.
+
+---
+
+## Step 9 — Run It
 
 ```bash
 pnpm dev

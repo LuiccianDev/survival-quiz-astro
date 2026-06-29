@@ -12,7 +12,7 @@ An AI-powered survival quiz where you answer 5 questions across deadly scenarios
 [![Node.js](https://img.shields.io/badge/Node.js->=22-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[Overview](#overview) · [Getting Started](#getting-started) · [Project Structure](#project-structure) · [How It Works](#how-it-works) · [Adding Scenarios](#adding-a-scenario) · [Documentation](#documentation)
+[Overview](#overview) · [Getting Started](#getting-started) · [Project Structure](#project-structure) · [How It Works](#how-it-works) · [Adding Scenarios](#adding-a-scenario) · [Security](#security) · [Documentation](#documentation)
 
 </div>
 
@@ -150,6 +150,23 @@ Each scenario requires exactly **5 questions** with exactly **4 options** each.
 | `pnpm build` | Build for production |
 | `pnpm preview` | Preview the production build locally |
 | `pnpm format` | Format all files with Prettier |
+
+---
+
+## Security
+
+The project applies multiple layers of supply chain protection via `pnpm-workspace.yaml`, on top of the application-level rate limiter described below.
+
+| Layer | Setting | What it does |
+|-------|---------|--------------|
+| Build script allowlist | `allowBuilds` | Only `esbuild` may run postinstall scripts. All other deps — including `@google/genai`, `protobufjs`, and `sharp` — are explicitly blocked. |
+| Exotic source blocking | `blockExoticSubdeps: true` | Prevents transitive dependencies from being resolved from git repos or direct tarball URLs instead of the npm registry. |
+| Trust policy | `trustPolicy: no-downgrade` | Blocks a package version if its trust level has decreased compared to previous releases (e.g., dropped provenance or signature). |
+| Publication delay | `minimumReleaseAge: 1440` | Refuses to install any package version published less than 24 hours ago — most malware is detected within that window. |
+| Script isolation | `ignore-scripts: true` | Disables lifecycle scripts globally; only packages explicitly listed in `allowBuilds` can execute build scripts. |
+
+> [!NOTE]
+> These settings protect the development environment and CI pipeline. They do not affect the runtime behavior of the deployed application.
 
 ---
 
