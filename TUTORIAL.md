@@ -71,14 +71,19 @@ Update `astro.config.mjs` to wire everything together:
 import { defineConfig } from 'astro/config'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@astrojs/react'
+import vercel from '@astrojs/vercel'
 
 export default defineConfig({
+  output: 'server',
+  adapter: vercel(),
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
   },
 })
 ```
+
+`output: 'server'` enables fully server-rendered mode — every page and API route is rendered on the server at request time. The `@astrojs/vercel` adapter translates Astro's SSR output into Vercel serverless functions.
 
 Create `src/styles/global.css` and import Tailwind plus a custom animation we'll use later:
 
@@ -651,7 +656,7 @@ The project is intentionally minimal so it's easy to extend. Here are some ideas
 
 **Persist results** — store results in `localStorage` and show a "your history" screen with your past deaths.
 
-**Deploy to Vercel or Netlify** — both support Astro SSR out of the box. Add your `GEMINI_API_KEY` as an environment variable in the platform dashboard and deploy.
+**Deploy to Vercel** — the project ships with `@astrojs/vercel` pre-configured and `output: 'server'` enabled. Run `pnpm build`, then `vercel deploy`. Add `GEMINI_API_KEY` as an environment variable in the Vercel project dashboard before your first deployment.
 
 ---
 
