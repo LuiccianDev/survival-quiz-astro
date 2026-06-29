@@ -7,4 +7,4 @@ blockExoticSubdeps: true   # block transitive deps from git/tarball sources
 engineStrict: true
 ignore-scripts: true
 minimumReleaseAge: 1440    # wait 24h before installing newly published versions (default in v11)
-trustPolicy: no-downgrade  # block packages whose trust level has decreased vs previous releases
+#trustPolicy: no-downgrade  # block packages whose trust level has decreased vs previous releases

@@ -82,7 +82,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    subgraph Server["Server (Node.js)"]
+    subgraph Server["Server (Vercel / Node.js)"]
         A[Layout.astro\nHTML shell]
         B[index.astro\nentry point]
         C[predict.ts\nSSR endpoint]
@@ -100,7 +100,7 @@ flowchart LR
     C -- JSON --> E
 ```
 
-> The HTML shell and routing run on the server. The quiz UI runs in the browser. The API endpoint runs on the server. They share no runtime — only data contracts.
+> The project uses `output: 'server'` with the `@astrojs/vercel` adapter. Every route is server-rendered on each request — there is no static pre-rendering. The HTML shell and routing run on the Vercel edge/serverless runtime. The quiz UI runs in the browser. The API endpoint runs on the server. They share no runtime — only data contracts.
 
 ---
 

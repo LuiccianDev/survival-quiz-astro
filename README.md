@@ -10,6 +10,7 @@ An AI-powered survival quiz where you answer 5 questions across deadly scenarios
 [![Gemini](https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Node.js](https://img.shields.io/badge/Node.js->=22-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 [Overview](#overview) 路 [Getting Started](#getting-started) 路 [Project Structure](#project-structure) 路 [How It Works](#how-it-works) 路 [Adding Scenarios](#adding-a-scenario) 路 [Security](#security) 路 [Documentation](#documentation)
@@ -27,6 +28,7 @@ The outcome is always predetermined. Gemini doesn't decide if you live or die 鈥
 **Key features:**
 
 - 4 built-in scenarios, each with 5 questions and 4 options
+- Fully server-rendered via the Vercel adapter (`output: 'server'`)
 - Server-side AI narration via the Gemini API (structured JSON output)
 - Typewriter animation revealing your verdict character by character
 - In-memory sliding window rate limiter protecting the free API quota
@@ -150,6 +152,22 @@ Each scenario requires exactly **5 questions** with exactly **4 options** each.
 | `pnpm build` | Build for production |
 | `pnpm preview` | Preview the production build locally |
 | `pnpm format` | Format all files with Prettier |
+
+---
+
+## Deploying to Vercel
+
+The project is pre-configured with `@astrojs/vercel` and `output: 'server'`. Every route is server-rendered at request time.
+
+```bash
+pnpm build
+vercel deploy
+```
+
+Add `GEMINI_API_KEY` as an environment variable in the Vercel project dashboard before deploying. The key is used exclusively server-side and is never bundled into client assets.
+
+> [!TIP]
+> The `vercel` CLI picks up `astro.config.mjs` automatically. No additional `vercel.json` configuration is needed for basic deployments.
 
 ---
 

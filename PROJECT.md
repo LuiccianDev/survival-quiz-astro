@@ -15,6 +15,7 @@ A technical reference for the "Would You Survive?" project. Use this document to
 | Tool            | Version     | Role                                           |
 | --------------- | ----------- | ---------------------------------------------- |
 | Astro           | ^7.0.3      | Framework — routing, SSR, Islands architecture |
+| `@astrojs/vercel` | latest    | Astro adapter — compiles SSR output to Vercel serverless functions |
 | React           | ^19.2.7     | Interactive UI components (quiz state machine) |
 | Tailwind CSS    | 4.3.1       | Utility-first styling                          |
 | `@google/genai` | 2.10.0      | Gemini AI SDK                                  |
@@ -42,7 +43,7 @@ survival-quiz/
 │   └── styles/
 │       └── global.css           # Tailwind import + custom keyframes
 ├── .env                         # Environment variables (not committed)
-├── astro.config.mjs             # Astro + Vite + Tailwind configuration
+├── astro.config.mjs             # Astro + Vite + Tailwind + Vercel adapter configuration
 ├── package.json
 └── tsconfig.json
 ```
@@ -71,9 +72,17 @@ Browser
        └─ Returns PredictionResult JSON
 ```
 
+### Astro SSR Configuration
+
+The project uses `output: 'server'` mode with the `@astrojs/vercel` adapter (`astro.config.mjs`). This means:
+
+- Every page and API route is server-rendered on each request — nothing is pre-rendered at build time.
+- The `@astrojs/vercel` adapter compiles Astro's SSR output into Vercel serverless functions.
+- `export const prerender = false` on `predict.ts` is still correct but technically redundant in full `server` mode — it documents intent and ensures the endpoint stays dynamic if the output mode is ever changed to `hybrid`.
+
 ### Astro Islands
 
-`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The rest of the page (layout, head, body shell) is static HTML with no JavaScript. This means:
+`SurvivalQuiz` is rendered as an **Astro Island** with `client:load`. The rest of the page (layout, head, body shell) is rendered server-side on every request. This means:
 
 - The document appears instantly — no JS blocking paint
 - React hydrates the quiz component after the page loads
